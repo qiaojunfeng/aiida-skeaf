@@ -56,6 +56,8 @@ remote_folder      137265  RemoteData
 retrieved          137266  FolderData
 ```
 
+A frequency vs angle plot can be found in [examples/results/example_01.png](examples/results/example_01.png)
+
 ## Development
 
 ```shell
