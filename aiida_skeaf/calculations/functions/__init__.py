@@ -9,12 +9,12 @@ from aiida.engine import calcfunction
 
 @calcfunction
 def create_bxsf_from_wannier90(remote_folder: orm.RemoteData) -> orm.RemoteData:
-    """Create an ``orm.RemoteData`` representing a single bxsf file from a ``Wannier90Calculation.outputs.remote_folder`.
+    """Create an ``RemoteData`` representing a single bxsf file from a ``Wannier90Calculation.outputs.remote_folder``.
 
     :param remote_folder: A ``RemoteData`` e.g. ``Wannier90Calculation.outputs.remote_folder``.
-    :type remote_folder: orm.RemoteData
+    :type remote_folder: aiida.orm.RemoteData
     :return: An ``RemoteData`` representing a single bxsf file, for ``SkeafCalculation.inputs.bxsf``.
-    :rtype: orm.RemoteData
+    :rtype: aiida.orm.RemoteData
     """
     computer = remote_folder.computer
     remote_path = pathlib.Path(remote_folder.get_remote_path())
@@ -35,14 +35,14 @@ def create_bxsf_from_wannier90(remote_folder: orm.RemoteData) -> orm.RemoteData:
 
 @calcfunction
 def create_bxsf_from_file(remote_path: orm.Str, computer: orm.Str) -> orm.RemoteData:
-    """Create an ``orm.RemoteData`` representing a single bxsf file from a file path.
+    """Create an ``RemoteData`` representing a single bxsf file from a file path.
 
-    :param remote_path: An ``orm.Str`` containing the path for a remote bxsf file.
-    :type remote_path: orm.RemoteData
-    :param computer: The label of remote computer (``calcfunction`` does not accept ``orm.Computer`` as input).
-    :type computer: orm.Str
+    :param remote_path: An ``Str`` containing the path for a remote bxsf file.
+    :type remote_path: aiida.orm.RemoteData
+    :param computer: The label of remote computer (``calcfunction`` does not accept ``Computer`` as input).
+    :type computer: aiida.orm.Str
     :return: An ``RemoteData`` representing a single bxsf file, for ``SkeafCalculation.inputs.bxsf``.
-    :rtype: orm.RemoteData
+    :rtype: aiida.orm.RemoteData
     """
 
     remote = orm.RemoteData(

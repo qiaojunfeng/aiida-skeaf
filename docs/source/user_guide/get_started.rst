@@ -38,5 +38,5 @@ If you have already set up your own aiida_skeaf code using
 Available calculations
 ++++++++++++++++++++++
 
-.. aiida-calcjob:: DiffCalculation
+.. aiida-calcjob:: SkeafCalculation
     :module: aiida_skeaf.calculations
