@@ -5,21 +5,47 @@ Register data types via the "aiida.data" entry point in setup.json.
 """
 # You can directly use or subclass aiida.orm.data.Data
 # or any other data type listed under 'verdi data'
-from voluptuous import Optional, Schema
+from voluptuous import All, In, Optional, Required, Schema
 
-from aiida.orm import Dict
+# Allowed parameters of SkeafCalculation.inputs.parameters
+input_parameters = {
+    Required("fermi_energy"): float,
+    Optional("num_interpolation", default=150): int,
+    Required("theta"): float,
+    Required("phi"): float,
+    Required("h_vector_direction"): All(str, In(["a", "b", "c", "n", "r"])),
+    Required("min_extremal_frequency"): float,
+    Optional("max_orbit_frequency_diff", default=0.01): float,
+    Optional("max_orbit_coordinate_diff", default=0.05): float,
+    Optional("near_wall_orbit", default=False): bool,
+    Required("starting_theta"): float,
+    Required("ending_theta"): float,
+    Required("starting_phi"): float,
+    Required("ending_phi"): float,
+    Optional("num_rotation", default=1): int,
+}
 
-# A subset of diff's command line options
-cmdline_options = {
-    Optional("ignore-case"): bool,
-    Optional("ignore-file-name-case"): bool,
-    Optional("ignore-tab-expansion"): bool,
-    Optional("ignore-space-change"): bool,
-    Optional("ignore-all-space"): bool,
+# Allowed input paramters of skeaf config.in
+skeaf_parameters = {
+    Required("filename"): str,
+    Required("fermi_energy"): float,
+    Required("num_interpolation", default=150): int,
+    Required("theta"): float,
+    Required("phi"): float,
+    Required("h_vector_direction"): All(str, In(["a", "b", "c", "n", "r"])),
+    Required("min_extremal_frequency"): float,
+    Required("max_orbit_frequency_diff", default=0.01): float,
+    Required("max_orbit_coordinate_diff", default=0.05): float,
+    Required("near_wall_orbit", default=False): bool,
+    Required("starting_theta"): float,
+    Required("ending_theta"): float,
+    Required("starting_phi"): float,
+    Required("ending_phi"): float,
+    Optional("num_rotation", default=1): int,
 }
 
 
-class DiffParameters(Dict):  # pylint: disable=too-many-ancestors
+class InputParameters:  # pylint: disable=too-many-ancestors
     """
     Command line options for diff.
 
@@ -28,10 +54,10 @@ class DiffParameters(Dict):  # pylint: disable=too-many-ancestors
     """
 
     # "voluptuous" schema  to add automatic validation
-    schema = Schema(cmdline_options)
+    schema = Schema(input_parameters)
 
     # pylint: disable=redefined-builtin
-    def __init__(self, dict=None, **kwargs):
+    def __init__(self, dict, /):
         """
         Constructor for the data class
 
@@ -41,8 +67,7 @@ class DiffParameters(Dict):  # pylint: disable=too-many-ancestors
         :param type parameters_dict: dict
 
         """
-        dict = self.validate(dict)
-        super().__init__(dict=dict, **kwargs)
+        self.dict = self.validate(dict)
 
     def validate(self, parameters_dict):  # pylint: disable=no-self-use
         """Validate command line options.
@@ -55,39 +80,85 @@ class DiffParameters(Dict):  # pylint: disable=too-many-ancestors
         :param type parameters_dict: dict
         :returns: validated dictionary
         """
-        return DiffParameters.schema(parameters_dict)
+        return self.schema(parameters_dict)
 
-    def cmdline_params(self, file1_name, file2_name):
-        """Synthesize command line parameters.
-
-        e.g. [ '--ignore-case', 'filename1', 'filename2']
-
-        :param file_name1: Name of first file
-        :param type file_name1: str
-        :param file_name2: Name of second file
-        :param type file_name2: str
-
-        """
-        parameters = []
-
-        pm_dict = self.get_dict()
-        for k in pm_dict.keys():
-            if pm_dict[k]:
-                parameters += ["--" + k]
-
-        parameters += [file1_name, file2_name]
-
-        return [str(p) for p in parameters]
+    def get_dict(self) -> dict:
+        """Return validated dict."""
+        return self.dict
 
     def __str__(self):
-        """String representation of node.
+        print(self.dict)
 
-        Append values of dictionary to usual representation. E.g.::
 
-            uuid: b416cbee-24e8-47a8-8c11-6d668770158b (pk: 590)
-            {'ignore-case': True}
+class SkeafParameters(InputParameters):  # pylint: disable=too-many-ancestors
+    """
+    Command line options for diff.
 
-        """
-        string = super().__str__()
-        string += "\n" + str(self.get_dict())
-        return string
+    This class represents a python dictionary used to
+    pass command line options to the executable.
+    """
+
+    # "voluptuous" schema  to add automatic validation
+    schema = Schema(skeaf_parameters)
+
+    def generate(self) -> str:
+        """Synthesize command line parameters."""
+        inputs = []
+
+        inputs.append(f"{self.dict['filename']:52s}| Filename (50 chars. max)")
+        inputs.append(
+            f"{self.dict['fermi_energy']:12.6f}" + " " * 40 + "| Fermi energy (Ryd)"
+        )
+        inputs.append(
+            f"{self.dict['num_interpolation']:4d}"
+            + " " * 48
+            + "| Interpolated number of points per single side"
+        )
+        inputs.append(f"{self.dict['theta']:10.6f}" + " " * 42 + "| Theta (degrees)")
+        inputs.append(f"{self.dict['phi']:10.6f}" + " " * 42 + "| Phi (degrees)")
+        inputs.append(
+            f"{self.dict['h_vector_direction']:1s}" + " " * 51 + "| H-vector direction"
+        )
+        inputs.append(
+            f"{self.dict['min_extremal_frequency']:8.4f}"
+            + " " * 44
+            + "| Minimum extremal FS freq. (kT)"
+        )
+        inputs.append(
+            f"{self.dict['max_orbit_frequency_diff']:7.3f}"
+            + " " * 45
+            + "| Maximum fractional diff. between orbit freqs. for averaging"
+        )
+        inputs.append(
+            f"{self.dict['max_orbit_coordinate_diff']:7.3f}"
+            + " " * 45
+            + "| Maximum distance between orbit avg. coords. for averaging"
+        )
+        near_wall_orbit = "y" if self.dict["near_wall_orbit"] else "n"
+        inputs.append(
+            f"{near_wall_orbit:1s}"
+            + " " * 51
+            + "| Allow extremal orbits near super-cell walls?"
+        )
+        inputs.append(
+            f"{self.dict['starting_theta']:10.6f}"
+            + " " * 42
+            + "| Starting theta (degrees)"
+        )
+        inputs.append(
+            f"{self.dict['ending_theta']:10.6f}" + " " * 42 + "| Ending theta (degrees)"
+        )
+        inputs.append(
+            f"{self.dict['starting_phi']:10.6f}" + " " * 42 + "| Starting phi (degrees)"
+        )
+        inputs.append(
+            f"{self.dict['ending_phi']:10.6f}" + " " * 42 + "| Ending phi (degrees)"
+        )
+        inputs.append(
+            f"{self.dict['num_rotation']:5d}" + " " * 47 + "| Number of rotation angles"
+        )
+        return "\n".join(inputs)
+
+    def __str__(self):
+        """String representation of node."""
+        return self.generate()

@@ -35,7 +35,8 @@ testing = [
     "wheel~=0.31",
     "coverage[toml]",
     "pytest~=6.0",
-    "pytest-cov"
+    "pytest-cov",
+    "pytest-regressions"
 ]
 pre-commit = [
     "pre-commit~=2.2",
@@ -49,17 +50,19 @@ docs = [
     "markupsafe<2.1"
 ]
 
-[project.entry-points."aiida.data"]
-"skeaf" = "aiida_skeaf.data:DiffParameters"
+# [project.entry-points."aiida.data"]
+# "skeaf" = "aiida_skeaf.data:SkeafParameters"
 
 [project.entry-points."aiida.calculations"]
-"skeaf" = "aiida_skeaf.calculations:DiffCalculation"
+"skeaf.skeaf" = "aiida_skeaf.calculations:SkeafCalculation"
+"skeaf.create_bxsf_from_wannier90" = "aiida_skeaf.calculations.functions:create_bxsf_from_wannier90"
+"skeaf.create_bxsf_from_file" = "aiida_skeaf.calculations.functions:create_bxsf_from_file"
 
 [project.entry-points."aiida.parsers"]
-"skeaf" = "aiida_skeaf.parsers:DiffParser"
+"skeaf" = "aiida_skeaf.parsers:SkeafParser"
 
-[project.entry-points."aiida.cmdline.data"]
-"skeaf" = "aiida_skeaf.cli:data_cli"
+# [project.entry-points."aiida.cmdline.data"]
+# "skeaf" = "aiida_skeaf.cli:data_cli"
 
 [tool.flit.module]
 name = "aiida_skeaf"
@@ -72,6 +75,7 @@ disable = [
     "too-many-ancestors",
     "invalid-name",
     "duplicate-code",
+    "import-outside-toplevel",
     # black compatibility
     "C0330",
     "C0326",

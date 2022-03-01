@@ -1,0 +1,14 @@
+ending_phi: 90.0
+ending_theta: 90.0
+fermi_energy: 14.2832
+h_vector_direction: r
+max_orbit_coordinate_diff: 0.05
+max_orbit_frequency_diff: 0.01
+min_extremal_frequency: 0.0147
+near_wall_orbit: false
+num_interpolation: 150
+num_rotation: 1
+phi: 0.0
+starting_phi: 0.0
+starting_theta: 0.0
+theta: 0.0
