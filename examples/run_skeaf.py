@@ -12,9 +12,9 @@ def submit():
 
     # Create a RemoteData from a bxsf file
     # remote_path = orm.Str('/scratch/jqiao/filtered-PdCoO2-SO-band47.bxsf')
-    # computer = orm.load_computer('localhost')
+    # computer = orm.Str('localhost')
     # remote = create_bxsf_from_file(remote_path, computer)
-    # or load it
+    # Or load it
     remote = orm.load_node(137231)
 
     skeaf_code = orm.load_code("skeaf@localhost")
