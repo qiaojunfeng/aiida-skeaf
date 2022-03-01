@@ -18,14 +18,42 @@ verdi plugin list aiida.calculations  # should now show your calclulation plugin
 
 ## Usage
 
-Here goes a [complete example](examples/run_skeaf.py) of how to submit a test calculation using this plugin.
+Here goes a [complete example](examples/example_01.py) of how to submit a test calculation using this plugin.
 
 A quick demo of how to submit a calculation:
 ```shell
 verdi daemon start     # make sure the daemon is running
 cd examples
-./run_skeaf.py         # run test calculation
+./example_01.py        # run test calculation
 verdi process list -a  # check record of calculation
+```
+
+An exemplary `verdi node show`:
+```
+Property     Value
+-----------  ------------------------------------
+type         SkeafCalculation
+state        Finished [0]
+pk           137264
+uuid         92d3ff92-9ab4-4828-9794-4172d7dcad50
+label
+description
+ctime        2022-03-01 19:12:16.157988+00:00
+mtime        2022-03-01 19:13:28.369793+00:00
+computer     [2] localhost
+
+Inputs          PK  Type
+----------  ------  ----------
+bxsf        137262  RemoteData
+code        137230  Code
+parameters  137263  Dict
+
+Outputs                PK  Type
+-----------------  ------  ----------
+frequency          137268  ArrayData
+output_parameters  137267  Dict
+remote_folder      137265  RemoteData
+retrieved          137266  FolderData
 ```
 
 ## Development

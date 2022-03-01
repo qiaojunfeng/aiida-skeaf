@@ -49,6 +49,9 @@ docs = [
     "furo",
     "markupsafe<2.1"
 ]
+analysis = [
+    "matplotlib"
+]
 
 # [project.entry-points."aiida.data"]
 # "skeaf" = "aiida_skeaf.data:SkeafParameters"

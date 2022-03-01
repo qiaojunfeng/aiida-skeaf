@@ -47,7 +47,7 @@ jobs:
     - name: Install python dependencies
       run: |
         pip install --upgrade pip
-        pip install -e .[testing]
+        pip install -e .[testing,analysis]
 
     - name: Run reentry scan
       run: reentry scan
@@ -71,7 +71,7 @@ jobs:
     - name: Install python dependencies
       run: |
         pip install --upgrade pip
-        pip install -e .[docs]
+        pip install -e .[docs,analysis]
         reentry scan -r aiida
     - name: Build docs
       run: cd docs && make
@@ -88,7 +88,7 @@ jobs:
     - name: Install python dependencies
       run: |
         pip install --upgrade pip
-        pip install -e .[pre-commit,docs,testing]
+        pip install -e .[pre-commit,docs,testing,analysis]
         reentry scan -r aiida
     - name: Run pre-commit
       run: |

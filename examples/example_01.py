@@ -1,72 +1,59 @@
-#!/usr/bin/env python
-"""Run a test calculation on localhost.
+#!/usr/bin/env runaiida
+"""Examplary script to submit a SkeafCalculation."""
+# pylint: disable=unused-import
+import pathlib
 
-Usage: ./example_01.py
-"""
-from os import path
+from aiida import engine, orm
 
-import click
+from aiida_skeaf.calculations import SkeafCalculation
+from aiida_skeaf.calculations.functions import create_bxsf_from_file
 
-from aiida import cmdline, engine
-from aiida.plugins import CalculationFactory, DataFactory
-
-from aiida_skeaf import helpers
-
-INPUT_DIR = path.join(path.dirname(path.realpath(__file__)), "input_files")
+INPUT_DIR = pathlib.Path(__file__).absolute().parent / "input_files"
 
 
-def test_run(skeaf_code):
-    """Run a calculation on the localhost computer.
+def submit():
+    """Submit a SkeafCalculation."""
 
-    Uses test helpers to create AiiDA Code on the fly.
-    """
-    if not skeaf_code:
-        # get code
-        computer = helpers.get_computer()
-        skeaf_code = helpers.get_code(entry_point="skeaf", computer=computer)
+    # Create a RemoteData from a bxsf file
+    remote_path = orm.Str(str(INPUT_DIR / "cylinder.bxsf"))
+    computer = orm.Str("localhost")
+    bxsf = create_bxsf_from_file(remote_path, computer)
+    # Or load it
+    # bxsf = orm.load_node(137231)
 
-    # Prepare input parameters
-    DiffParameters = DataFactory("skeaf")
-    parameters = DiffParameters({"ignore-case": True})
+    skeaf_code = orm.load_code("skeaf@localhost")
 
-    SinglefileData = DataFactory("singlefile")
-    file1 = SinglefileData(file=path.join(INPUT_DIR, "file1.txt"))
-    file2 = SinglefileData(file=path.join(INPUT_DIR, "file2.txt"))
+    parameters = {
+        "fermi_energy": 0.086887,
+        "num_interpolation": 50,
+        "theta": 0.000000,
+        "phi": 0.000000,
+        "h_vector_direction": "r",
+        "min_extremal_frequency": 0.01,
+        "max_orbit_frequency_diff": 0.01,
+        "max_orbit_coordinate_diff": 0.05,
+        "near_wall_orbit": False,
+        "starting_theta": 0.000000,
+        "ending_theta": 0.000000,
+        "starting_phi": 0.000000,
+        "ending_phi": 90.000000,
+        "num_rotation": 90,
+    }
 
-    # set up calculation
     inputs = {
         "code": skeaf_code,
         "parameters": parameters,
-        "file1": file1,
-        "file2": file2,
-        "metadata": {
-            "description": "Test job submission with the aiida_skeaf plugin",
-        },
+        "bxsf": bxsf,
     }
 
-    # Note: in order to submit your calculation to the aiida daemon, do:
-    # from aiida.engine import submit
-    # future = submit(CalculationFactory('skeaf'), **inputs)
-    result = engine.run(CalculationFactory("skeaf"), **inputs)
+    calc = engine.submit(SkeafCalculation, **inputs)
 
-    computed_diff = result["skeaf"].get_content()
-    print(f"Computed diff between files: \n{computed_diff}")
+    print(f"Submitted {calc}")
 
-
-@click.command()
-@cmdline.utils.decorators.with_dbenv()
-@cmdline.params.options.CODE()
-def cli(code):
-    """Run example.
-
-    Example usage: $ ./example_01.py --code diff@localhost
-
-    Alternative (creates diff@localhost-test code): $ ./example_01.py
-
-    Help: $ ./example_01.py --help
-    """
-    test_run(code)
+    # Once finished, plot the frequency vs angle
+    # from aiida_skeaf.utils.plot import plot_frequency
+    # plot_frequency(calc)
 
 
 if __name__ == "__main__":
-    cli()  # pylint: disable=no-value-for-parameter
+    submit()
