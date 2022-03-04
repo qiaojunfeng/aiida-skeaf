@@ -1,0 +1,143 @@
+"""
+Parsers provided by aiida_skeaf.
+
+Register parsers via the "aiida.parsers" entry point in setup.json.
+"""
+import pathlib
+import re
+import typing as ty
+
+from aiida import orm
+from aiida.common import exceptions
+from aiida.engine import ExitCode
+from aiida.parsers.parser import Parser
+
+from aiida_skeaf.calculations.wan2skeaf import Wan2skeafCalculation
+
+
+class Wan2skeafParser(Parser):
+    """
+    Parser class for parsing output of ``wan2skeaf.py``.
+    """
+
+    def __init__(self, node):
+        """
+        Initialize Parser instance
+
+        Checks that the ProcessNode being passed was produced by a SkeafCalculation.
+
+        :param node: ProcessNode of calculation
+        :param type node: :class:`aiida.orm.ProcessNode`
+        """
+        super().__init__(node)
+        if not issubclass(node.process_class, Wan2skeafCalculation):
+            raise exceptions.ParsingError("Can only parse Wan2skeafCalculation")
+
+    def parse(self, **kwargs):
+        """
+        Parse outputs, store results in database.
+
+        :returns: an exit code, if parsing fails (or nothing if parsing succeeds)
+        """
+        output_filename = self.node.get_option("output_filename")
+
+        # Check that folder content is as expected
+        files_retrieved = self.retrieved.list_object_names()
+        files_expected = [
+            Wan2skeafCalculation._DEFAULT_OUTPUT_FILE,  # pylint: disable=protected-access
+        ]
+        # Note: set(A) <= set(B) checks whether A is a subset of B
+        if not set(files_expected) <= set(files_retrieved):
+            self.logger.error(
+                f"Found files '{files_retrieved}', expected to find '{files_expected}'"
+            )
+            return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+
+        # parse `wan2skeaf.out`
+        self.logger.info(f"Parsing '{output_filename}'")
+        with self.retrieved.open(output_filename, "r") as handle:
+            output_node = parse_wan2skeaf_out(handle.readlines())
+        self.out("output_parameters", output_node)
+
+        band_indexes_in_bxsf = output_node.get_dict().get("band_indexes_in_bxsf")
+
+        # attach RemoteData for extracted bxsf
+        self.logger.info("Attaching extracted bxsf files")
+        self.attach_bxsf_files(band_indexes_in_bxsf)
+
+        return ExitCode(0)
+
+    def attach_bxsf_files(  # pylint: disable=inconsistent-return-statements
+        self, band_indexes_in_bxsf
+    ):
+        """Attach RemoteData for extracted bxsf."""
+
+        input_params = self.node.inputs["parameters"].get_dict()
+        input_band_index = input_params.get("band_index", "all")
+
+        if input_band_index == "all":
+            indexes = band_indexes_in_bxsf
+        else:
+            indexes = [input_band_index]
+
+        remote_folder = self.node.outputs.remote_folder
+        remote_folder_path = pathlib.Path(remote_folder.get_remote_path())
+        remote_files = remote_folder.listdir()
+        bxsf_filename = Wan2skeafCalculation._DEFAULT_OUTPUT_BXSF.replace(  # pylint: disable=protected-access
+            ".bxsf", "_band_{:d}.bxsf"
+        )
+
+        for idx in indexes:
+            filename = bxsf_filename.format(idx)
+
+            if filename not in remote_files:
+                self.logger.error(
+                    f"Found files '{remote_files}' in remote_folder, expected to find '{filename}'"
+                )
+                return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+
+            remote_path = str(remote_folder_path / filename)
+            remote = orm.RemoteData(
+                remote_path=remote_path,
+                computer=remote_folder.computer,
+            )
+            self.out(f"output_bxsf.band{idx}", remote)
+
+        return
+
+
+def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
+    """Parse `wan2skeaf.out`."""
+    parameters = {
+        "fermi_energy_unit": "eV",
+    }
+
+    regexs = {
+        "timestamp_started": re.compile(r"Started on\s*(.+)"),
+        "fermi_energy_in_bxsf": re.compile(
+            r"Fermi Energy from file:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
+        ),
+        "fermi_energy_computed": re.compile(
+            r"Computed Fermi energy:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
+        ),
+        "num_bands": re.compile(r"Number of bands:\s*([0-9]+)"),
+        "kpoint_mesh": re.compile(r"Grid shape:\s*(.+)"),
+        "band_indexes_in_bxsf": re.compile(r"Bands in bxsf:\s*(.+)"),
+    }
+
+    for line in filecontent:
+        for key, reg in regexs.items():
+            match = reg.match(line.strip())
+            if match:
+                parameters[key] = match.group(1)
+                regexs.pop(key, None)
+                break
+
+    parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]
+    parameters["band_indexes_in_bxsf"] = [
+        int(_) for _ in parameters["band_indexes_in_bxsf"].split()
+    ]
+    parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
+    parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
+
+    return orm.Dict(dict=parameters)

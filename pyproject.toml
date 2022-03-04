@@ -57,12 +57,14 @@ analysis = [
 # "skeaf" = "aiida_skeaf.data:SkeafParameters"
 
 [project.entry-points."aiida.calculations"]
-"skeaf.skeaf" = "aiida_skeaf.calculations:SkeafCalculation"
+"skeaf.skeaf" = "aiida_skeaf.calculations.skeaf:SkeafCalculation"
+"skeaf.wan2skeaf" = "aiida_skeaf.calculations.wan2skeaf:Wan2skeafCalculation"
 "skeaf.create_bxsf_from_wannier90" = "aiida_skeaf.calculations.functions:create_bxsf_from_wannier90"
 "skeaf.create_bxsf_from_file" = "aiida_skeaf.calculations.functions:create_bxsf_from_file"
 
 [project.entry-points."aiida.parsers"]
-"skeaf" = "aiida_skeaf.parsers:SkeafParser"
+"skeaf.skeaf" = "aiida_skeaf.parsers.skeaf:SkeafParser"
+"skeaf.wan2skeaf" = "aiida_skeaf.parsers.wan2skeaf:Wan2skeafParser"
 
 # [project.entry-points."aiida.cmdline.data"]
 # "skeaf" = "aiida_skeaf.cli:data_cli"
