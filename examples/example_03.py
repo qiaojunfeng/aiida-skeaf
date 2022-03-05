@@ -1,9 +1,10 @@
 #!/usr/bin/env runaiida
 """Examplary script to submit a SkeafWorkChain."""
-from aiida_wannier90_workflows.utils.workflows.builder import print_builder
-
 from aiida import engine, orm
 
+from aiida_wannier90_workflows.utils.workflows.builder import print_builder
+
+from aiida_skeaf.utils.plot import plot_frequency_workchain
 from aiida_skeaf.workflows import SkeafWorkChain
 
 
@@ -26,9 +27,12 @@ def submit():
 
     print_builder(builder)
 
-    calc = engine.submit(builder)
+    wkchain = engine.submit(builder)
 
-    print(f"Submitted {calc}")
+    print(f"Submitted {wkchain}")
+
+    # Once workchain has finished, plot frequency vs angle
+    plot_frequency_workchain(wkchain, x="theta")
 
 
 if __name__ == "__main__":
