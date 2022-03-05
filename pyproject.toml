@@ -66,6 +66,9 @@ analysis = [
 "skeaf.skeaf" = "aiida_skeaf.parsers.skeaf:SkeafParser"
 "skeaf.wan2skeaf" = "aiida_skeaf.parsers.wan2skeaf:Wan2skeafParser"
 
+[project.entry-points."aiida.workflows"]
+"skeaf.skeaf" = "aiida_skeaf.workflows:SkeafWorkChain"
+
 # [project.entry-points."aiida.cmdline.data"]
 # "skeaf" = "aiida_skeaf.cli:data_cli"
 

@@ -68,6 +68,16 @@ class SkeafParser(Parser):
         self.logger.info(f"Parsing '{filename}'")
         with self.retrieved.open(filename, "r") as handle:
             output_node = parse_frequency(handle.readlines())
+
+        # Exchange theta and phi if needed
+        input_params = self.node.inputs["parameters"].get_dict()
+        angle_iso_convention = input_params.get("angle_iso_convention")
+        if angle_iso_convention:
+            theta = output_node.get_array("theta")
+            phi = output_node.get_array("phi")
+            output_node.set_array("theta", phi)
+            output_node.set_array("phi", theta)
+
         self.out("frequency", output_node)
 
         # parse `results_orbitoutlines_invAng.out`

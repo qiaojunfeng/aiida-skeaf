@@ -127,6 +127,24 @@ class SkeafCalculation(CalcJob):
         # add filename
         params["filename"] = self._DEFAULT_INPUT_BXSF
 
+        angle_iso_convention = params.pop("angle_iso_convention")
+        if angle_iso_convention:
+            #
+            theta = params["theta"]
+            phi = params["phi"]
+            params["theta"] = phi
+            params["phi"] = theta
+            #
+            theta = params["starting_theta"]
+            phi = params["starting_phi"]
+            params["starting_theta"] = phi
+            params["starting_phi"] = theta
+            #
+            theta = params["ending_theta"]
+            phi = params["ending_phi"]
+            params["ending_theta"] = phi
+            params["ending_phi"] = theta
+
         # generate the raw input for skeaf
         params = SkeafParameters(params).generate()
 

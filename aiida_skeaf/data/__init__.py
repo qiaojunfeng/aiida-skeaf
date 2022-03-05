@@ -23,6 +23,12 @@ input_parameters = {
     Required("starting_phi"): float,
     Required("ending_phi"): float,
     Optional("num_rotation", default=1): int,
+    # For spherical coordinates (r, theta, phi), theta is the angle w.r.t to z-axis
+    # in ISO convention, however in SKEAF, phi is the angle w.r.t to z-axis.
+    # Setting this to False is the default behaviour of skeaf,
+    # if set as True, I will exchange theta and phi when writting the raw input file
+    # for skeaf.
+    Optional("angle_iso_convention", default=False): bool,
 }
 
 # Allowed input paramters of skeaf config.in

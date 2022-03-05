@@ -26,6 +26,7 @@ def prepare_bxsf_for_skeaf(
     band_to_keep,
     shift_fermi=0.0,
     verbose=False,
+    print_minmax=False,
 ):
     """
     SKEAF wants:
@@ -45,6 +46,9 @@ def prepare_bxsf_for_skeaf(
     print_line = True  # Set to False for bands we don't want to print
 
     band_found = False
+
+    if print_minmax:
+        eigvals = []
 
     for line in in_fhandle:
         ###### Preliminary checks
@@ -158,6 +162,16 @@ def prepare_bxsf_for_skeaf(
         # Print depending on flag
         if print_line:
             out_fhandle.write(line)
+
+            if band_found and print_minmax:
+                if not any(
+                    _ in line
+                    for _ in ["BAND:", "END_BANDGRID_3D", "END_BLOCK_BANDGRID_3D"]
+                ):
+                    eigvals.append(float(line.strip()))
+
+    if print_minmax:
+        print(f"Min and max of band {band_to_keep} : {min(eigvals)} {max(eigvals)}")
 
     if not band_found:
         raise InvalidBXSF(
@@ -448,6 +462,7 @@ if __name__ == "__main__":
                         out_fhandle,
                         band_to_keep=idx,
                         verbose=True,
+                        print_minmax=True,
                     )
         except Exception as exc:
             os.remove(fname)
