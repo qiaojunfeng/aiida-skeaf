@@ -1,22 +1,18 @@
 #!/usr/bin/env python
-"""Wrapper workchain for `SkeafCalculation` to automatically handle several errors."""
+"""Workchain to run `Wan2skeafCalculation` and `SkeafCalculation`.
+
+Automatically calculate frequencies for a wannier90 generated multi-band BXSF file.
+"""
 import pathlib
 import typing as ty
-
-from aiida_quantumespresso.utils.mapping import prepare_process_inputs
-from aiida_quantumespresso.workflows.protocols.utils import ProtocolMixin
 
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.common.lang import type_check
-from aiida.engine import (
-    PortNamespace,
-    ProcessBuilder,
-    ToContext,
-    WorkChain,
-    append_,
-    while_,
-)
+from aiida.engine import ProcessBuilder, ToContext, WorkChain, append_
+
+from aiida_quantumespresso.utils.mapping import prepare_process_inputs
+from aiida_quantumespresso.workflows.protocols.utils import ProtocolMixin
 
 from aiida_skeaf.calculations import SkeafCalculation, Wan2skeafCalculation
 
@@ -30,11 +26,10 @@ def validate_inputs(
 
 
 class SkeafWorkChain(ProtocolMixin, WorkChain):
-    """Workchain to run `Wan2skeafCalculation` and `SkeafCalculation`.
+    """Workchain to run ``Wan2skeafCalculation`` and ``SkeafCalculation``.
 
-    Given a wannier90 generated RemoteData containing a bxsf file,
+    Given a wannier90 generated ``RemoteData`` containing a bxsf file,
     run skeaf on all the bands in the bxsf.
-
     """
 
     @classmethod
@@ -74,7 +69,6 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         spec.output_namespace(
             "skeaf",
             dynamic=True,
-            # valid_type=PortNamespace,
             help="Output SkeafCalculation for each band.",
         )
 
@@ -82,10 +76,8 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
             cls.setup,
             cls.run_wan2skeaf,
             cls.inspect_wan2skeaf,
-            while_(cls.should_run_skeaf)(
-                cls.run_skeaf,
-                cls.inspect_skeaf,
-            ),
+            cls.run_skeaf_many,
+            cls.inspect_skeaf_many,
             cls.results,
         )
 
@@ -169,7 +161,7 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         self.ctx.bxsf_to_run = {}
         # A list of band that have finished, e.g.
         # ['band48', 'band49']
-        self.ctx.bxsf_finished = []
+        self.ctx.calc_skeaf_band_index = []
 
     def run_wan2skeaf(self):
         """Run the `Wan2skeafCalculation`."""
@@ -194,18 +186,12 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
             self.report(
                 f"{calc.process_label} failed with exit status {calc.exit_status}"
             )
-            return (
-                self.exit_codes.ERROR_SUB_PROCESS_FAILED_WAN2SKEAF  # pylint: disable=no-member
-            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_WAN2SKEAF
 
         self.ctx.bxsf_to_run = dict(calc.outputs.output_bxsf)
 
-    def should_run_skeaf(self) -> bool:
-        """Run ``SkeafCalculation`` until ``self.ctx.bxsf_to_run`` is empty."""
-        return len(self.ctx.bxsf_to_run) > 0
-
-    def run_skeaf(self):  # pylint: disable=inconsistent-return-statements
-        """Run the `SkeafCalculation` for each bxsf ``RemoteData``."""
+    def run_skeaf_many(self):  # pylint: disable=inconsistent-return-statements
+        """Run multiple `SkeafCalculation`s for all bxsf ``RemoteData``s."""
         inputs = AttributeDict(self.exposed_inputs(SkeafCalculation, namespace="skeaf"))
 
         parameters = inputs.parameters.get_dict()
@@ -216,40 +202,42 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
             parameters["fermi_energy"] = w2s_output_params["fermi_energy_computed"]
             inputs.parameters = orm.Dict(dict=parameters)
 
-        # Find the min band index
-        band_idx = min(self.ctx.bxsf_to_run)
-        bxsf = self.ctx.bxsf_to_run.pop(band_idx)
-
-        # Only calculate bands acrossing Fermi
         fermi_energy = parameters["fermi_energy"]
-        idx = int(band_idx.removeprefix("band"))
-        idx = w2s_output_params["band_indexes_in_bxsf"].index(idx)
-        band_min = w2s_output_params["band_min"][idx]
-        band_max = w2s_output_params["band_max"][idx]
-        if band_min > fermi_energy or band_max < fermi_energy:
-            return
 
-        inputs.bxsf = bxsf
-        inputs.metadata.call_link_label = f"skeaf_{band_idx}"
+        # Launch many SkeafCalculation in parallel
+        # Run skeaf with band index as order, from min to max.
+        bxsf_to_run = self.ctx.bxsf_to_run
+        bxsf_to_run = dict(sorted(bxsf_to_run.items(), key=lambda _: _[0]))
 
-        inputs = prepare_process_inputs(SkeafCalculation, inputs)
-        running = self.submit(SkeafCalculation, **inputs)
-        self.report(f"launching {running.process_label}<{running.pk}> for {band_idx}")
+        for band_idx, bxsf in bxsf_to_run.items():
+            # Only calculate bands acrossing Fermi
+            idx = int(band_idx.removeprefix("band"))
+            idx = w2s_output_params["band_indexes_in_bxsf"].index(idx)
+            band_min = w2s_output_params["band_min"][idx]
+            band_max = w2s_output_params["band_max"][idx]
+            if band_min > fermi_energy or band_max < fermi_energy:
+                continue
 
-        self.ctx.bxsf_finished.append(band_idx)
-        return ToContext(calc_skeaf=append_(running))
+            inputs.bxsf = bxsf
+            inputs.metadata.call_link_label = f"skeaf_{band_idx}"
 
-    def inspect_skeaf(self):  # pylint: disable=inconsistent-return-statements
+            inputs = prepare_process_inputs(SkeafCalculation, inputs)
+            future = self.submit(SkeafCalculation, **inputs)
+            self.to_context(calc_skeaf=append_(future))
+            # I need to store the corresponding band index, otherwise I don't
+            # know the band index of the SkeafCalculation in self.ctx.calc_skeaf
+            self.ctx.calc_skeaf_band_index.append(band_idx)
+
+            self.report(f"launching {future.process_label}<{future.pk}> for {band_idx}")
+
+    def inspect_skeaf_many(self):  # pylint: disable=inconsistent-return-statements
         """Verify that the `SkeafCalculation` successfully finished."""
-        calc = self.ctx.calc_skeaf[-1]
-
-        if not calc.is_finished_ok:
-            self.report(
-                f"{calc.process_label} failed with exit status {calc.exit_status}"
-            )
-            return (
-                self.exit_codes.ERROR_SUB_PROCESS_FAILED_SKEAF  # pylint: disable=no-member
-            )
+        for calc in self.ctx.calc_skeaf:
+            if not calc.is_finished_ok:
+                self.report(
+                    f"{calc.process_label} failed with exit status {calc.exit_status}"
+                )
+                return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SKEAF
 
     def results(self):
         """Attach the relevant output nodes."""
@@ -265,9 +253,34 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         # essentially a dot `.`
         namespace_separator = self.spec().namespace_separator
 
-        for i, band in enumerate(self.ctx.bxsf_finished):
+        for i, band in enumerate(self.ctx.calc_skeaf_band_index):
             calc = self.ctx.calc_skeaf[i]
             outputs = calc.outputs._construct_attribute_dict(  # pylint: disable=protected-access
                 incoming=False
             )
             self.out(f"skeaf{namespace_separator}{band}", outputs)
+
+        self.report(f"{self.get_name()} successfully completed")
+
+    def on_terminated(self):
+        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
+        super().on_terminated()
+
+        if not self.inputs.clean_workdir:
+            self.report("remote folders will not be cleaned")
+            return
+
+        cleaned_calcs = []
+
+        for called_descendant in self.node.called_descendants:
+            if isinstance(called_descendant, orm.CalcJobNode):
+                try:
+                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
+                    cleaned_calcs.append(called_descendant.pk)
+                except (OSError, KeyError):
+                    pass
+
+        if cleaned_calcs:
+            self.report(
+                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
+            )

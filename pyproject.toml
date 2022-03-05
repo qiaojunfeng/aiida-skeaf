@@ -6,11 +6,11 @@ build-backend = "flit_core.buildapi"
 [project]
 # See https://www.python.org/dev/peps/pep-0621/
 name = "aiida-skeaf"
-dynamic = ["version"]  # read from aiida_skeaf/__init__.py
+dynamic = ["version"] # read from aiida_skeaf/__init__.py
 description = "AiiDA plugin for the Supercell K-space Extremal Area Finder (SKEAF) code"
-authors = [{name = "Junfeng Qiao", email = "qiaojunfeng@outlook.com"}]
+authors = [{ name = "Junfeng Qiao", email = "qiaojunfeng@outlook.com" }]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python",
     "Intended Audience :: Science/Research",
@@ -21,10 +21,7 @@ classifiers = [
 ]
 keywords = ["aiida", "plugin"]
 requires-python = ">=3.7"
-dependencies = [
-    "aiida-core>=1.6.4,<3",
-    "voluptuous"
-]
+dependencies = ["aiida-core>=1.6.4,<3", "voluptuous"]
 
 [project.urls]
 Source = "https://github.com/qiaojunfeng/aiida-skeaf"
@@ -38,10 +35,7 @@ testing = [
     "pytest-cov",
     "pytest-regressions"
 ]
-pre-commit = [
-    "pre-commit~=2.2",
-    "pylint>=2.5.0,<2.9"
-]
+pre-commit = ["pre-commit~=2.2", "pylint>=2.5.0,<2.9"]
 docs = [
     "sphinx",
     "sphinxcontrib-contentui",
@@ -49,13 +43,10 @@ docs = [
     "furo",
     "markupsafe<2.1"
 ]
-analysis = [
-    "matplotlib"
-]
+analysis = ["matplotlib"]
 
 # [project.entry-points."aiida.data"]
 # "skeaf" = "aiida_skeaf.data:SkeafParameters"
-
 [project.entry-points."aiida.calculations"]
 "skeaf.skeaf" = "aiida_skeaf.calculations.skeaf:SkeafCalculation"
 "skeaf.wan2skeaf" = "aiida_skeaf.calculations.wan2skeaf:Wan2skeafCalculation"
@@ -71,7 +62,6 @@ analysis = [
 
 # [project.entry-points."aiida.cmdline.data"]
 # "skeaf" = "aiida_skeaf.cli:data_cli"
-
 [tool.flit.module]
 name = "aiida_skeaf"
 
@@ -89,6 +79,9 @@ disable = [
     "C0326",
 ]
 
+[tool.pylint.tool-check]
+generated-members = 'self.exit_codes.*'
+
 [tool.pytest.ini_options]
 # Configuration for [pytest](https://docs.pytest.org)
 python_files = "test_*.py example_*.py"
@@ -102,14 +95,27 @@ filterwarnings = [
 [tool.coverage.run]
 # Configuration of [coverage.py](https://coverage.readthedocs.io)
 # reporting which lines of your plugin are covered by tests
-source=["aiida_skeaf"]
+source = ["aiida_skeaf"]
 
 [tool.isort]
 # Configuration of [isort](https://isort.readthedocs.io)
 line_length = 120
 force_sort_within_sections = true
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'AIIDA', 'FIRSTPARTY', 'LOCALFOLDER']
+sections = [
+    'FUTURE',
+    'STDLIB',
+    'THIRDPARTY',
+    'AIIDA',
+    'AIIDA_QUANTUMESPRESSO',
+    'AIIDA_WANNIER90',
+    'AIIDA_WANNIER90_WORKFLOWS',
+    'FIRSTPARTY',
+    'LOCALFOLDER'
+]
 known_aiida = ['aiida']
+known_aiida_quantumespresso = ['aiida_quantumespresso']
+known_aiida_wannier90 = ['aiida_wannier90']
+known_aiida_wannier90_workflows = ['aiida_wannier90_workflows']
 
 [tool.tox]
 legacy_tox_ini = """
