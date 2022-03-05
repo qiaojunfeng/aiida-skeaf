@@ -50,6 +50,10 @@ extensions = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "aiida": ("https://aiida-core.readthedocs.io/en/latest", None),
+    "aiida_quantumespresso": (
+        "https://aiida-quantumespresso.readthedocs.io/en/latest",
+        None,
+    ),
 }
 
 # Add any paths that contain templates here, relative to this directory.

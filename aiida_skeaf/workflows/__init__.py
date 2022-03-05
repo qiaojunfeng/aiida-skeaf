@@ -114,15 +114,15 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         """Return a builder prepopulated with inputs selected according to the chosen protocol.
 
         :param codes: [description]
-        :type codes: ty.Dict[str, ty.Union[orm.Code, str, int]]
+        :type codes: typing.Dict[str, typing.Union[aiida.orm.Code, str, int]]
         :param bxsf: [description]
-        :type bxsf: orm.RemoteData
+        :type bxsf: aiida.orm.RemoteData
         :param protocol: [description], defaults to None
         :type protocol: str, optional
         :param overrides: [description], defaults to None
         :type overrides: dict, optional
         :return: [description]
-        :rtype: ProcessBuilder
+        :rtype: aiida.engine.ProcessBuilder
         """
         from aiida_wannier90_workflows.utils.workflows.builder import (
             recursive_merge_builder,
@@ -191,7 +191,7 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         self.ctx.bxsf_to_run = dict(calc.outputs.output_bxsf)
 
     def run_skeaf_many(self):  # pylint: disable=inconsistent-return-statements
-        """Run multiple `SkeafCalculation`s for all bxsf ``RemoteData``s."""
+        """Run multiple ``SkeafCalculation`` for all bxsf ``RemoteData``."""
         inputs = AttributeDict(self.exposed_inputs(SkeafCalculation, namespace="skeaf"))
 
         parameters = inputs.parameters.get_dict()

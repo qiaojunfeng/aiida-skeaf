@@ -7,6 +7,10 @@ from aiida.plugins import CalculationFactory
 
 SkeafCalculation = CalculationFactory("skeaf.skeaf")
 
+__all__ = [
+    "plot_frequency",
+]
+
 
 def plot_frequency(
     calc: SkeafCalculation,
