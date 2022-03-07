@@ -35,8 +35,10 @@ def plot_frequency(
 
     header = frequency.attributes["header"].strip().split(",")
 
+    show_plot = False
     if ax is None:
         _, ax = plt.subplots(1, 1)
+        show_plot = True
 
     ax.plot(x_array, y_array)
     ax.scatter(
@@ -55,7 +57,7 @@ def plot_frequency(
     ax.set_ylabel(ylabel)
     ax.set_title("Frequency vs angle")
 
-    if ax is None:
+    if show_plot:
         plt.show()
 
 
@@ -82,8 +84,10 @@ def plot_frequency_workchain(
     :param wkchain: A finished ``SkeafWorkChain``
     :type wkchain: SkeafWorkChain
     """
+    show_plot = False
     if "ax" not in kwargs:
         _, ax = plt.subplots()
+        show_plot = True
     else:
         ax = kwargs.pop("ax")
 
@@ -99,4 +103,5 @@ def plot_frequency_workchain(
     ax.set_title(f"{wkchain.process_label}<{wkchain.pk}>")
     ax.legend()
 
-    plt.show()
+    if show_plot:
+        plt.show()
