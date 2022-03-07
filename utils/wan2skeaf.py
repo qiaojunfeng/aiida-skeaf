@@ -16,6 +16,19 @@ PI = 3.141592653589793
 CONV_FACTOR = 2 * PI / BOHR_TO_ANG  # vectors will need to be DIVIDED by this factor
 
 
+def removesuffix(text: str, suffix: str) -> str:
+    """For python <= 3.8 compatibility.
+
+    :param text: _description_
+    :type text: str
+    :param suffix: _description_
+    :type suffix: str
+    :return: _description_
+    :rtype: str
+    """
+    return text[: -len(suffix)] if text.endswith(suffix) and len(suffix) != 0 else text
+
+
 class InvalidBXSF(Exception):
     """Invalid bxsf file."""
 
@@ -451,7 +464,7 @@ if __name__ == "__main__":
         try:
             for idx in indexes:
                 in_fhandle.seek(0)
-                fname = out_fname.removesuffix(".bxsf") + f"_band_{idx}.bxsf"
+                fname = removesuffix(out_fname, ".bxsf") + f"_band_{idx}.bxsf"
                 if idx is None or fname is None:
                     continue
 
