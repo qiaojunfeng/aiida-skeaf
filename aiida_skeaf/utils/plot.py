@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Functions to plot output results."""
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
 from aiida import orm
 from aiida.common import AttributeDict
@@ -9,12 +11,90 @@ from aiida_skeaf.calculations import SkeafCalculation
 from aiida_skeaf.workflows import SkeafWorkChain
 
 
+def complement_color(r, g, b):
+    """Get complement color.
+
+    https://stackoverflow.com/questions/40233986/python-is-there-a-function-or-formula-to-find-the-complementary-colour-of-a-rgb
+    :param r: _description_
+    :type r: _type_
+    :param g: _description_
+    :type g: _type_
+    :param b: _description_
+    :type b: _type_
+    """
+
+    def hilo(a, b, c):
+        # Sum of the min & max of (a, b, c)
+        if c < b:
+            b, c = c, b
+        if b < a:
+            a, b = b, a
+        if c < b:
+            b, c = c, b
+        return a + c
+
+    k = hilo(r, g, b)
+    return tuple(k - u for u in (r, g, b))
+
+
+def plot_xy(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    label: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    title: str = "Frequency vs angle",
+    ax: plt.Axes = None,
+) -> None:
+    """Plot raw data.
+
+    :param x: _description_
+    :type x: np.ndarray
+    :param y: _description_
+    :type y: np.ndarray
+    :param label: _description_, defaults to None
+    :type label: str, optional
+    :param ax: If provided reuse this matplotlib axes, defaults to None
+    :type ax: matplotlib.pyplot.Axes, optional
+    """
+    show_plot = False
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+        show_plot = True
+
+    line2D = ax.plot(x, y)
+    line_color = line2D[0].get_c()
+    line_color = mpl.colors.to_rgb(line_color)
+    # edge_color = "r"
+    edge_color = complement_color(*line_color)
+
+    ax.scatter(
+        x,
+        y,
+        marker="o",
+        facecolors="none",
+        edgecolors=edge_color,
+        label=label,
+    )
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    ax.legend()
+
+    if show_plot:
+        plt.show()
+
+
 def plot_frequency(
     frequency: orm.ArrayData,
     x: str = "phi",
     y: str = "freq",
-    label: str = None,
-    ax: plt.Axes = None,
+    *,
+    multiply_cosine: bool = False,
+    **kwargs,
 ) -> None:
     """Plot ``SkeafCalculation.outputs.frequency`` array.
 
@@ -24,8 +104,9 @@ def plot_frequency(
     :type x: str, optional
     :param y: the array to be used as y data, defaults to "freq"
     :type y: str, optional
-    :param ax: If provided reuse this matplotlib axes, defaults to None
-    :type ax: matplotlib.pyplot.Axes, optional
+    :param multiply_cosine: multiply y array with cos(theta), theta from z axis
+    should be a horizontal line for cylindrical Fermi surface.
+    :type multiply_cosine: bool, optional
     """
     if any(_ not in frequency.get_arraynames() for _ in [x, y]):
         raise ValueError(f"valid x and y are {frequency.get_arraynames()}")
@@ -33,32 +114,15 @@ def plot_frequency(
     x_array = frequency.get_array(x)
     y_array = frequency.get_array(y)
 
+    if multiply_cosine:
+        y_array *= np.cos(x_array / 180 * np.pi)
+
     header = frequency.attributes["header"].strip().split(",")
-
-    show_plot = False
-    if ax is None:
-        _, ax = plt.subplots(1, 1)
-        show_plot = True
-
-    ax.plot(x_array, y_array)
-    ax.scatter(
-        x_array,
-        y_array,
-        marker="o",
-        facecolors="none",
-        edgecolors="r",
-        label=label,
-    )
 
     xlabel = [_ for _ in header if x in _.lower()][0]
     ylabel = [_ for _ in header if y in _.lower()][0]
 
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title("Frequency vs angle")
-
-    if show_plot:
-        plt.show()
+    plot_xy(x_array, y_array, xlabel=xlabel, ylabel=ylabel, **kwargs)
 
 
 def plot_frequency_calc(

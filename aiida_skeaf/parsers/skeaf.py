@@ -77,6 +77,7 @@ class SkeafParser(Parser):
             phi = output_node.get_array("phi")
             output_node.set_array("theta", phi)
             output_node.set_array("phi", theta)
+        output_node.set_attribute("angle_iso_convention", angle_iso_convention)
 
         self.out("frequency", output_node)
 
