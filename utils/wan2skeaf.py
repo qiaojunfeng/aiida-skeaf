@@ -181,7 +181,8 @@ def prepare_bxsf_for_skeaf(
                     _ in line
                     for _ in ["BAND:", "END_BANDGRID_3D", "END_BLOCK_BANDGRID_3D"]
                 ):
-                    eigvals.append(float(line.strip()))
+                    e = [float(_) for _ in line.strip().split()]
+                    eigvals.extend(e)
 
     if print_minmax:
         print(f"Min and max of band {band_to_keep} : {min(eigvals)} {max(eigvals)}")
@@ -255,8 +256,9 @@ def estimate_fermi(
             ):
                 in_band = False
             else:
-                counter_num_gridpoints_per_band += 1
-                band_energies.append(float(line.strip()))
+                e = [float(_) for _ in line.strip().split()]
+                counter_num_gridpoints_per_band += len(e)
+                band_energies.extend(e)
 
     # Final checks
     assert counter_band == num_bands
