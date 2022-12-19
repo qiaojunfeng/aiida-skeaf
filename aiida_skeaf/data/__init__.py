@@ -120,8 +120,8 @@ class SkeafParameters(InputParameters):  # pylint: disable=too-many-ancestors
             + " " * 48
             + "| Interpolated number of points per single side"
         )
-        inputs.append(f"{self.dict['theta']:10.6f}" + " " * 42 + "| Theta (degrees)")
-        inputs.append(f"{self.dict['phi']:10.6f}" + " " * 42 + "| Phi (degrees)")
+        inputs.append(f"{self.dict['theta']:11.6f}" + " " * 41 + "| Theta (degrees)")
+        inputs.append(f"{self.dict['phi']:11.6f}" + " " * 41 + "| Phi (degrees)")
         inputs.append(
             f"{self.dict['h_vector_direction']:1s}" + " " * 51 + "| H-vector direction"
         )
@@ -147,18 +147,18 @@ class SkeafParameters(InputParameters):  # pylint: disable=too-many-ancestors
             + "| Allow extremal orbits near super-cell walls?"
         )
         inputs.append(
-            f"{self.dict['starting_theta']:10.6f}"
-            + " " * 42
+            f"{self.dict['starting_theta']:11.6f}"
+            + " " * 41
             + "| Starting theta (degrees)"
         )
         inputs.append(
-            f"{self.dict['ending_theta']:10.6f}" + " " * 42 + "| Ending theta (degrees)"
+            f"{self.dict['ending_theta']:11.6f}" + " " * 41 + "| Ending theta (degrees)"
         )
         inputs.append(
-            f"{self.dict['starting_phi']:10.6f}" + " " * 42 + "| Starting phi (degrees)"
+            f"{self.dict['starting_phi']:11.6f}" + " " * 41 + "| Starting phi (degrees)"
         )
         inputs.append(
-            f"{self.dict['ending_phi']:10.6f}" + " " * 42 + "| Ending phi (degrees)"
+            f"{self.dict['ending_phi']:11.6f}" + " " * 41 + "| Ending phi (degrees)"
         )
         inputs.append(
             f"{self.dict['num_rotation']:5d}" + " " * 47 + "| Number of rotation angles"
