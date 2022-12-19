@@ -125,7 +125,7 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         :return: [description]
         :rtype: aiida.engine.ProcessBuilder
         """
-        from aiida_wannier90_workflows.utils.workflows.builder import (
+        from aiida_wannier90_workflows.utils.workflows.builder.submit import (
             recursive_merge_builder,
         )
 
