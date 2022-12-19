@@ -174,7 +174,9 @@ def prepare_bxsf_for_skeaf(
 
         # Print depending on flag
         if print_line:
-            out_fhandle.write(line)
+            # I remove all the leading spaces, because if there are spaces
+            # before the band eigenvalues, skeaf will crash
+            out_fhandle.write(line.strip() + "\n")
 
             if band_found and print_minmax:
                 if not any(
