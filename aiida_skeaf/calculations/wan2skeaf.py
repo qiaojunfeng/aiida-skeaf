@@ -50,7 +50,7 @@ class Wan2skeafCalculation(CalcJob):
             valid_type=orm.RemoteData,
             help="Input BXSF file.",
         )
-        spec.inputs(
+        spec.input(
             "settings.autolink_bxsf",
             valid_type=orm.Bool,
             default=lambda: orm.Bool(True),
@@ -62,7 +62,7 @@ class Wan2skeafCalculation(CalcJob):
                 "pass a RemoteData as long as it contains a single BXSF file. "
                 "If set to False, you must pass a RemoteData whose path is "
                 "exactly the filename of a `input.bxsf` file."
-            )
+            ),
         )
         spec.output(
             "output_parameters",
