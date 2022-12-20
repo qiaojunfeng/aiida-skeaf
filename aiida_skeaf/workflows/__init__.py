@@ -163,6 +163,8 @@ class SkeafWorkChain(ProtocolMixin, WorkChain):
         # A list of band that have finished, e.g.
         # ['band48', 'band49']
         self.ctx.calc_skeaf_band_index = []
+        # the skeaf calculations
+        self.ctx.calc_skeaf = []
 
     def run_wan2skeaf(self):
         """Run the `Wan2skeafCalculation`."""
