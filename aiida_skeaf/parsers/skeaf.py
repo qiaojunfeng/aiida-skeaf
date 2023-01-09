@@ -131,12 +131,14 @@ def parse_frequency(filecontent: ty.List[str]) -> orm.ArrayData:
         delimiter=",",
         usecols=range(6),
         dtype=float,
+        ndmin=2,  # at least 2 dim even if there's single freq in output
     )
     numorbcopy = np.loadtxt(
         filecontent,
         delimiter=",",
         usecols=6,
         dtype=int,
+        ndmin=1,  # at least 1 dim even if there's single freq in output
     )
 
     array.set_array("theta", freq[:, 0])
