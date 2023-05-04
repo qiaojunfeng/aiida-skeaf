@@ -49,10 +49,6 @@ jobs:
         pip install --upgrade pip
         pip install -e .[testing,analysis]
 
-    - name: Run reentry scan
-      run: reentry scan
-      if: ${{ matrix.aiida-version != 'develop' }}
-
     - name: Run test suite
       env:
         # show timings of tests
@@ -72,7 +68,6 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install -e .[docs,analysis]
-        reentry scan -r aiida
     - name: Build docs
       run: cd docs && make
 
@@ -89,7 +84,6 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install -e .[pre-commit,docs,testing,analysis]
-        reentry scan -r aiida
     - name: Run pre-commit
       run: |
         pre-commit install
