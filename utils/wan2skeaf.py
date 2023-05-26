@@ -481,6 +481,7 @@ if __name__ == "__main__":
                         verbose=True,
                         print_minmax=True,
                     )
+            print("Job done!")
         except Exception as exc:
             os.remove(fname)
             print("*" * 72)
