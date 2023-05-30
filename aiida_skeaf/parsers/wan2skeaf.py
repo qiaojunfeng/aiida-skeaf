@@ -128,7 +128,7 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         r"Min and max of band\s*([0-9]*)\s*:\s*([+-]?(?:[0-9]*[.])?[0-9]+)\s+([+-]?(?:[0-9]*[.])?[0-9]+)"
     )
     band_minmax = {}
-
+    
     for line in filecontent:
         for key, reg in regexs.items():
             match = reg.match(line.strip())
@@ -143,19 +143,22 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
             band_min = float(match.group(2))
             band_max = float(match.group(3))
             band_minmax[band] = (band_min, band_max)
-
-    parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]
-    parameters["band_indexes_in_bxsf"] = [
-        int(_) for _ in parameters["band_indexes_in_bxsf"].split()
-    ]
-    parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
-    parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
-    # make sure the order is the same as parameters["band_indexes_in_bxsf"]
-    parameters["band_min"] = [
-        band_minmax[_][0] for _ in parameters["band_indexes_in_bxsf"]
-    ]
-    parameters["band_max"] = [
-        band_minmax[_][1] for _ in parameters["band_indexes_in_bxsf"]
-    ]
-
+    try:
+        parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]
+        parameters["band_indexes_in_bxsf"] = [
+            int(_) for _ in parameters["band_indexes_in_bxsf"].split()
+        ]
+        parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
+        parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
+        # make sure the order is the same as parameters["band_indexes_in_bxsf"]
+        parameters["band_min"] = [
+            band_minmax[_][0] for _ in parameters["band_indexes_in_bxsf"]
+        ]
+        parameters["band_max"] = [
+            band_minmax[_][1] for _ in parameters["band_indexes_in_bxsf"]
+        ]
+    except KeyError:
+        # look for "Job done!"
+        # if "Job done!"" is not there:
+            # 
     return orm.Dict(dict=parameters)

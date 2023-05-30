@@ -436,6 +436,13 @@ if __name__ == "__main__":
             encoding="ascii",
         )
         print("INFO: Auto-decompressing input bz2 file.")
+    elif in_fname.endswith(".7z"):
+        print("INFO: Decompressing input 7z file.")
+        os.system('7z x bxsf.7z')
+        #if not os.path.exists("wjl.bxsf"):
+            # throw an error?
+        os.system('mv wjl.bxsf input.bxsf')
+        open_function = open
     else:
         open_function = open
 
