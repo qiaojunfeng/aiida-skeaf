@@ -86,6 +86,7 @@ class Wan2skeafCalculation(CalcJob):
             "ERROR_MISSING_OUTPUT_FILES",
             message="Calculation did not produce all expected output files.",
         )
+        # TODO: add an exit code for parsing error
 
     def prepare_for_submission(self, folder):
         """

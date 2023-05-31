@@ -437,11 +437,32 @@ if __name__ == "__main__":
         )
         print("INFO: Auto-decompressing input bz2 file.")
     elif in_fname.endswith(".7z"):
+        import sys, re
+        # TODO: add try catch as fallback to os.system for your old code
+        import py7zr
         print("INFO: Decompressing input 7z file.")
-        os.system('7z x bxsf.7z')
-        #if not os.path.exists("wjl.bxsf"):
-            # throw an error?
-        os.system('mv wjl.bxsf input.bxsf')
+        ret_code =  os.system(f'7z x {in_fname}')
+        if ret_code != 0:
+            print(f"ERROR: file not found {in_fname}")
+            sys.exit(ret_code)
+
+        filter_pattern = re.compile(r'.*\.bxsf')
+        with py7zr.SevenZipFile(in_fname, 'r') as zip:
+            allfiles = zip.getnames()
+            targets = [f for f in allfiles if filter_pattern.match(f)]
+            if len(targets) > 1:
+                print("More than one bxsf file in archive")
+                sys.exit(2)
+            elif len(targets) == 0:
+                print("No bxsf file in archive")
+                sys.exit(2)
+        with py7zr.SevenZipFile('archive.7z', 'r') as zip:
+            zip.extract(targets=targets)
+            bxsf_filename = targets[0]
+            # TODO add more comments
+            dst_filename = "input.bxsf"
+            os.system(f'mv {bxsf_filename} {dst_filename}')
+
         open_function = open
     else:
         open_function = open

@@ -56,7 +56,12 @@ class Wan2skeafParser(Parser):
         # parse `wan2skeaf.out`
         self.logger.info(f"Parsing '{output_filename}'")
         with self.retrieved.open(output_filename, "r") as handle:
-            output_node = parse_wan2skeaf_out(handle.readlines())
+            try:
+                output_node = parse_wan2skeaf_out(handle.readlines())
+            except (ValueError, KeyError) as exc:
+                self.logger.error(f"Failed to parse '{output_filename}': {exc}")
+                # TODO change this
+                return self.exit_codes.XXXXXXXXX
         self.out("output_parameters", output_node)
 
         band_indexes_in_bxsf = output_node.get_dict().get("band_indexes_in_bxsf")
@@ -123,6 +128,7 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         "num_bands": re.compile(r"Number of bands:\s*([0-9]+)"),
         "kpoint_mesh": re.compile(r"Grid shape:\s*(.+)"),
         "band_indexes_in_bxsf": re.compile(r"Bands in bxsf:\s*(.+)"),
+        "timestamp_end": re.compile(r"Job done!\s*(.+)")
     }
     re_band_minmax = re.compile(
         r"Min and max of band\s*([0-9]*)\s*:\s*([+-]?(?:[0-9]*[.])?[0-9]+)\s+([+-]?(?:[0-9]*[.])?[0-9]+)"
@@ -143,22 +149,22 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
             band_min = float(match.group(2))
             band_max = float(match.group(3))
             band_minmax[band] = (band_min, band_max)
-    try:
-        parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]
-        parameters["band_indexes_in_bxsf"] = [
-            int(_) for _ in parameters["band_indexes_in_bxsf"].split()
-        ]
-        parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
-        parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
-        # make sure the order is the same as parameters["band_indexes_in_bxsf"]
-        parameters["band_min"] = [
-            band_minmax[_][0] for _ in parameters["band_indexes_in_bxsf"]
-        ]
-        parameters["band_max"] = [
-            band_minmax[_][1] for _ in parameters["band_indexes_in_bxsf"]
-        ]
-    except KeyError:
-        # look for "Job done!"
-        # if "Job done!"" is not there:
-            # 
+
+    if 'timestamp_end' not in parameters:
+        raise ValueError("Job not finished!")
+
+    parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]
+    parameters["band_indexes_in_bxsf"] = [
+        int(_) for _ in parameters["band_indexes_in_bxsf"].split()
+    ]
+    parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
+    parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
+    # make sure the order is the same as parameters["band_indexes_in_bxsf"]
+    parameters["band_min"] = [
+        band_minmax[_][0] for _ in parameters["band_indexes_in_bxsf"]
+    ]
+    parameters["band_max"] = [
+        band_minmax[_][1] for _ in parameters["band_indexes_in_bxsf"]
+    ]
+
     return orm.Dict(dict=parameters)
