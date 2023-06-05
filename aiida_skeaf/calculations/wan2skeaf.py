@@ -86,7 +86,18 @@ class Wan2skeafCalculation(CalcJob):
             "ERROR_MISSING_OUTPUT_FILES",
             message="Calculation did not produce all expected output files.",
         )
-        # TODO: add an exit code for parsing error
+
+        spec.exit_code(
+            301,
+            "ERROR_PARSING_OUTPUT",
+            message="Parsing output failed.",
+        )
+
+        spec.exit_code(
+            302,
+            "ERROR_MISSING_INPUT_FILE",
+            message="Input file is missing.",
+        )
 
     def prepare_for_submission(self, folder):
         """
@@ -110,7 +121,8 @@ class Wan2skeafCalculation(CalcJob):
         ]
         if "num_spin" in parameters:
             cmdline_params += ["--num_spin", parameters["num_spin"]]
-        cmdline_params.append(self._DEFAULT_INPUT_BXSF)
+
+        cmdline_params.append(self.inputs.bxsf_filename.value)
         #
         codeinfo.cmdline_params = cmdline_params
         codeinfo.code_uuid = self.inputs.code.uuid
@@ -197,5 +209,5 @@ class InputParameters:  # pylint: disable=too-many-ancestors
         """Return validated dict."""
         return self.dict
 
-    def __str__(self):
+    def __str__(self):  # pylint: disable=invalid-str-returned
         print(self.dict)
