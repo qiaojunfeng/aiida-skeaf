@@ -429,6 +429,11 @@ if __name__ == "__main__":
     print(f"  {out_fname = }")
     print()
 
+    if not os.path.isfile(in_fname):
+        import sys
+        print(f"ERROR: Input file {in_fname} does not exist.")
+        #sys.exit(2)
+
     if in_fname.endswith(".bz2"):
         open_function = functools.partial(
             bz2.open,
@@ -439,30 +444,43 @@ if __name__ == "__main__":
     elif in_fname.endswith(".7z"):
         import sys, re
         # TODO: add try catch as fallback to os.system for your old code
-        import py7zr
-        print("INFO: Decompressing input 7z file.")
-        ret_code =  os.system(f'7z x {in_fname}')
-        if ret_code != 0:
-            print(f"ERROR: file not found {in_fname}")
-            sys.exit(ret_code)
-
-        filter_pattern = re.compile(r'.*\.bxsf')
-        with py7zr.SevenZipFile(in_fname, 'r') as zip:
-            allfiles = zip.getnames()
-            targets = [f for f in allfiles if filter_pattern.match(f)]
-            if len(targets) > 1:
-                print("More than one bxsf file in archive")
+        try:
+            import py7zr
+            print("INFO: Decompressing input 7z file using py7zr.")
+            filter_pattern = re.compile(r'.*\.bxsf')
+            with py7zr.SevenZipFile(in_fname, 'r') as zip:
+                allfiles = zip.getnames()
+                targets = [f for f in allfiles if filter_pattern.match(f)]
+                if len(targets) > 1:
+                    print("More than one bxsf file in archive")
+                    sys.exit(2)
+                elif len(targets) == 0:
+                    print("No bxsf file in archive")
+                    sys.exit(2)
+            with py7zr.SevenZipFile(in_fname, 'r') as zip:
+                zip.extract(targets=targets)
+                bxsf_filename = targets[0]
+                # TODO add more comments
+                dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
+                os.system(f'mv {bxsf_filename} {dst_filename}')
+                in_fname = dst_filename        
+        except ImportError:
+            print("INFO: Decompressing input 7z file.")
+            ret_code =  os.system(f'7z x {in_fname}')
+            if ret_code != 0:
+                print(f"ERROR: file not found {in_fname}")
+                sys.exit(ret_code)
+            bxsf_files = [f for f in os.listdir() if f.endswith(".bxsf")]
+            if len(bxsf_files) > 1:
+                print("More than one bxsf file in the working directory")
                 sys.exit(2)
-            elif len(targets) == 0:
-                print("No bxsf file in archive")
+            elif len(bxsf_files) == 0:
+                print("No bxsf file in the working directory")
                 sys.exit(2)
-        with py7zr.SevenZipFile('archive.7z', 'r') as zip:
-            zip.extract(targets=targets)
-            bxsf_filename = targets[0]
-            # TODO add more comments
+            bxsf_filename = bxsf_files[0]
             dst_filename = "input.bxsf"
             os.system(f'mv {bxsf_filename} {dst_filename}')
-
+            in_fname = dst_filename
         open_function = open
     else:
         open_function = open
@@ -509,7 +527,7 @@ if __name__ == "__main__":
                         verbose=True,
                         print_minmax=True,
                     )
-            print("Job done!")
+            print(f"Job done at {datetime.datetime.now()}")
         except Exception as exc:
             os.remove(fname)
             print("*" * 72)

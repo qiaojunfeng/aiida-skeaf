@@ -58,10 +58,13 @@ class Wan2skeafParser(Parser):
         with self.retrieved.open(output_filename, "r") as handle:
             try:
                 output_node = parse_wan2skeaf_out(handle.readlines())
+            except FileNotFoundError as exc:
+                self.logger.error(exc)
+                return self.exit_codes.ERROR_MISSING_INPUT_FILE
             except (ValueError, KeyError) as exc:
                 self.logger.error(f"Failed to parse '{output_filename}': {exc}")
-                # TODO change this
-                return self.exit_codes.XXXXXXXXX
+                return self.exit_codes.ERROR_PARSING_OUTPUT
+
         self.out("output_parameters", output_node)
 
         band_indexes_in_bxsf = output_node.get_dict().get("band_indexes_in_bxsf")
@@ -118,6 +121,7 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     }
 
     regexs = {
+        "input_file_not_found": re.compile(r"ERROR: Input file\s*(.+)\s*does not exist."),
         "timestamp_started": re.compile(r"Started on\s*(.+)"),
         "fermi_energy_in_bxsf": re.compile(
             r"Fermi Energy from file:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
@@ -128,13 +132,13 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         "num_bands": re.compile(r"Number of bands:\s*([0-9]+)"),
         "kpoint_mesh": re.compile(r"Grid shape:\s*(.+)"),
         "band_indexes_in_bxsf": re.compile(r"Bands in bxsf:\s*(.+)"),
-        "timestamp_end": re.compile(r"Job done!\s*(.+)")
+        "timestamp_end": re.compile(r"Job done at\s*(.+)")
     }
     re_band_minmax = re.compile(
         r"Min and max of band\s*([0-9]*)\s*:\s*([+-]?(?:[0-9]*[.])?[0-9]+)\s+([+-]?(?:[0-9]*[.])?[0-9]+)"
     )
     band_minmax = {}
-    
+
     for line in filecontent:
         for key, reg in regexs.items():
             match = reg.match(line.strip())
@@ -149,6 +153,10 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
             band_min = float(match.group(2))
             band_max = float(match.group(3))
             band_minmax[band] = (band_min, band_max)
+
+    if 'input_file_not_found' in parameters:
+        import errno, os
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),"bxsf.7z") # TODO: make more general
 
     if 'timestamp_end' not in parameters:
         raise ValueError("Job not finished!")
