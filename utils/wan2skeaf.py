@@ -432,7 +432,7 @@ if __name__ == "__main__":
     if not os.path.isfile(in_fname):
         import sys
         print(f"ERROR: Input file {in_fname} does not exist.")
-        #sys.exit(2)
+        sys.exit(2)
 
     if in_fname.endswith(".bz2"):
         open_function = functools.partial(
@@ -443,7 +443,6 @@ if __name__ == "__main__":
         print("INFO: Auto-decompressing input bz2 file.")
     elif in_fname.endswith(".7z"):
         import sys, re
-        # TODO: add try catch as fallback to os.system for your old code
         try:
             import py7zr
             print("INFO: Decompressing input 7z file using py7zr.")
@@ -460,7 +459,6 @@ if __name__ == "__main__":
             with py7zr.SevenZipFile(in_fname, 'r') as zip:
                 zip.extract(targets=targets)
                 bxsf_filename = targets[0]
-                # TODO add more comments
                 dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
                 os.system(f'mv {bxsf_filename} {dst_filename}')
                 in_fname = dst_filename        
@@ -478,7 +476,7 @@ if __name__ == "__main__":
                 print("No bxsf file in the working directory")
                 sys.exit(2)
             bxsf_filename = bxsf_files[0]
-            dst_filename = "input.bxsf"
+            dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
             os.system(f'mv {bxsf_filename} {dst_filename}')
             in_fname = dst_filename
         open_function = open

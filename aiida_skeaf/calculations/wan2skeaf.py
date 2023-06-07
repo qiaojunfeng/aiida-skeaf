@@ -99,6 +99,12 @@ class Wan2skeafCalculation(CalcJob):
             message="Input file is missing.",
         )
 
+        spec.exit_code(
+            303,
+            "ERROR_JOB_NOT_FINISHED",
+            message="Calculation did not finish correctly.",
+        )
+
     def prepare_for_submission(self, folder):
         """
         Create input files.
