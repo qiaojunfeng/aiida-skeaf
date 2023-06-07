@@ -214,6 +214,3 @@ class InputParameters:  # pylint: disable=too-many-ancestors
     def get_dict(self) -> dict:
         """Return validated dict."""
         return self.dict
-
-    def __str__(self):  # pylint: disable=invalid-str-returned
-        print(self.dict)
