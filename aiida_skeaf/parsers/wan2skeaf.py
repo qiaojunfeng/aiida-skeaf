@@ -59,9 +59,12 @@ class Wan2skeafParser(Parser):
             try:
                 output_node = parse_wan2skeaf_out(handle.readlines())
             except FileNotFoundError as exc:
-                self.logger.error(exc)
+                self.logger.error(f"File not found: {exc}")
                 return self.exit_codes.ERROR_MISSING_INPUT_FILE
-            except (ValueError, KeyError) as exc:
+            except ValueError as exc:
+                self.logger.error(f"Calculation not finished: {exc}")
+                return self.exit_codes.ERROR_JOB_NOT_FINISHED
+            except KeyError as exc:
                 self.logger.error(f"Failed to parse '{output_filename}': {exc}")
                 return self.exit_codes.ERROR_PARSING_OUTPUT
 
@@ -121,7 +124,7 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     }
 
     regexs = {
-        "input_file_not_found": re.compile(r"ERROR: Input file\s*(.+)\s*does not exist."),
+        "input_file_not_found": re.compile(r"ERROR: Input file\s*(.+) does not exist."),
         "timestamp_started": re.compile(r"Started on\s*(.+)"),
         "fermi_energy_in_bxsf": re.compile(
             r"Fermi Energy from file:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
@@ -155,8 +158,9 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
             band_minmax[band] = (band_min, band_max)
 
     if 'input_file_not_found' in parameters:
-        import errno, os
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),"bxsf.7z") # TODO: make more general
+        import errno
+        import os
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), parameters['input_file_not_found'])
 
     if 'timestamp_end' not in parameters:
         raise ValueError("Job not finished!")
