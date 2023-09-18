@@ -15,6 +15,14 @@ from aiida.parsers.parser import Parser
 from aiida_skeaf.calculations.wan2skeaf import Wan2skeafCalculation
 
 
+class BXSFFileNotFoundError(Exception): # Should be inherited from aiida.common.exceptions.NotExistent?
+    """Raised when BXSF file is not found."""
+    pass
+
+class JobNotFinishedError(Exception): # Should be inherited from aiida.common.exceptions?  
+    """Raised when wan2skeaf job is not finished and end timestamp is not in the output."""
+    pass
+
 class Wan2skeafParser(Parser):
     """
     Parser class for parsing output of ``wan2skeaf.py``.
@@ -160,10 +168,9 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     if 'input_file_not_found' in parameters:
         import errno
         import os
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), parameters['input_file_not_found'])
-
+        raise BXSFFileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), parameters['input_file_not_found'])
     if 'timestamp_end' not in parameters:
-        raise ValueError("Job not finished!")
+        raise JobNotFinishedError("Job not finished!")
 
     parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]
     parameters["band_indexes_in_bxsf"] = [
