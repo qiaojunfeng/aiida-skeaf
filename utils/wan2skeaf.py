@@ -6,6 +6,7 @@ import datetime
 import functools
 import os
 import traceback
+import subprocess
 
 # pylint: skip-file
 
@@ -31,7 +32,6 @@ def removesuffix(text: str, suffix: str) -> str:
 
 class InvalidBXSF(Exception):
     """Invalid bxsf file."""
-
 
 def prepare_bxsf_for_skeaf(
     in_fhandle,
@@ -460,11 +460,12 @@ if __name__ == "__main__":
                 zip.extract(targets=targets)
                 bxsf_filename = targets[0]
                 dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
-                os.system(f'mv {bxsf_filename} {dst_filename}')
+
+                os.rename(bxsf_filename, dst_filename)
                 in_fname = dst_filename        
         except ImportError:
             print("INFO: Decompressing input 7z file.")
-            ret_code =  os.system(f'7z x {in_fname}')
+            ret_code = subprocess.run(['7z', 'x', in_fname]) # if in_fname has strange characters, this will fail. TODO: implement a function to convert to a safe filename
             if ret_code != 0:
                 print(f"ERROR: file not found {in_fname}")
                 sys.exit(ret_code)
@@ -477,7 +478,7 @@ if __name__ == "__main__":
                 sys.exit(2)
             bxsf_filename = bxsf_files[0]
             dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
-            os.system(f'mv {bxsf_filename} {dst_filename}')
+            os.rename(bxsf_filename, dst_filename)
             in_fname = dst_filename
         open_function = open
     else:
