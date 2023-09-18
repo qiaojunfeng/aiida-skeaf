@@ -127,6 +127,10 @@ class Wan2skeafCalculation(CalcJob):
         ]
         if "num_spin" in parameters:
             cmdline_params += ["--num_spin", parameters["num_spin"]]
+        if "smearing_type" in parameters and "smearing_value" in parameters:
+            cmdline_params += ["--smearing_type", parameters["smearing_type"]]
+            cmdline_params += ["--smearing_value", parameters["smearing_value"]]
+
 
         cmdline_params.append(self.inputs.bxsf_filename.value)
         #
@@ -171,6 +175,8 @@ input_parameters = {
     Required("num_electrons"): int,
     Optional("num_spin"): int,
     Optional("band_index", default="all"): Any(int, str),
+    Optional("smearing_type"): str,
+    Optional("smearing_value"): float,
 }
 
 
