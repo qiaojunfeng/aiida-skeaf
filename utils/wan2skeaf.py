@@ -8,6 +8,10 @@ import os
 import traceback
 import subprocess
 
+import numpy as np
+import scipy as sp
+import math
+
 # pylint: skip-file
 
 # Check if this is the value used in skeaf!
@@ -29,9 +33,14 @@ def removesuffix(text: str, suffix: str) -> str:
     """
     return text[: -len(suffix)] if text.endswith(suffix) and len(suffix) != 0 else text
 
-
 class InvalidBXSF(Exception):
     """Invalid bxsf file."""
+
+class InvalidSmearingType(Exception):
+    """Invalid smearing type to be used in wan2skeaf Fermi energy calculation."""
+
+class FermiLevelEstimationFailed(Exception):
+    """Invalid smearing type to be used in wan2skeaf Fermi energy calculation."""
 
 def prepare_bxsf_for_skeaf(
     in_fhandle,
@@ -194,6 +203,38 @@ def prepare_bxsf_for_skeaf(
             "A file was written, but you passed some non-existing band to keep, so that the file is probably empty!"
         )
 
+# when using make sure that spin degeneracy is set to 2.
+# what about precision, is float enough?
+def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, temperature: float, k_point_grid, num_electrons: int, smearing = "cold") -> float:
+    """Find the occupation number of a given band at a given temperature.
+    param fermi_energy: current estimation of the Fermi energy
+    type fermi_energy: float
+    param band_energies: array of energies of the band
+    type band_energies: np.array
+    param temperature: fictitious smearing temperature
+    type temperature: float
+    param k_point_grid: number of k-points in the grid dimensions where the occupation number of each band will be averaged
+    type k_point_grid: array of ints of length 3
+    param num_electrons: number of electrons
+    type num_electrons: int
+    param smearing: type of smearing, for now only "cold" is implemented
+    type smearing: str
+    return: computed number of electrons for current Fermi energy - number of electrons
+    rtype: float
+    """
+    num_bands = int(len(band_energies)/k_point_grid[0]/k_point_grid[1]/k_point_grid[2])
+    occupation_numbers = np.zeros(num_bands)
+    if smearing == "cold":
+        # cold smearing
+        for i in range(num_bands):
+            # compute x_i for the energies of a band
+            x_is = (fermi_energy - band_energies[i*k_point_grid[0]*k_point_grid[1]*k_point_grid[2]:(i+1)*k_point_grid[0]*k_point_grid[1]*k_point_grid[2]])/temperature
+
+            # compute the occupation number by averaging over the k-points
+            occupation_numbers[i] = np.average(sp.special.erfc(1/np.sqrt(2) - x_is) + np.sqrt(2/math.pi) * np.exp((np.sqrt(2) - x_is)*x_is - 1/2))
+    else:
+        raise InvalidSmearingType("Only cold smearing is implemented")
+    return np.sum(occupation_numbers) - num_electrons
 
 def estimate_fermi(
     in_fhandle,
@@ -201,6 +242,8 @@ def estimate_fermi(
     spin_deg,
     verbose=False,
     plot_dos=False,
+    smearing_type=None,
+    smearing_value=None,
 ):
     fermi_from_file = None
     next_is_count = False
@@ -273,7 +316,7 @@ def estimate_fermi(
     assert (
         len(band_energies) == num_bands * grid_shape[0] * grid_shape[1] * grid_shape[2]
     )
-    band_energies.sort()
+
     print("Length of band-energies array:", len(band_energies))
     print("~" * 72)
 
@@ -294,26 +337,37 @@ def estimate_fermi(
     print("-" * 72)
 
     for num_elec_local in num_electrons_list:
-        num_expected_occupied_points = (
-            grid_shape[0] * grid_shape[1] * grid_shape[2] * num_elec_local / spin_deg
-        )
-
-        # There is half occupation for even number of electrons and double spin degeneracy per band
-        half_occupation = spin_deg == 2 and num_elec_local % 2 == 1
-        num_expected_occupied_points = int(num_expected_occupied_points)
-
-        # print("Closest index to Fermi energy position:", num_expected_occupied_points)
-        print(f"### Considering {num_elec_local} electrons:")
-        if half_occupation:
-            print("   Energy of the two half-occupied points:")
+        if smearing_type is not None and spin_deg == 2: # only inplemented for spin degeneracy 2
+            # find the Fermi energy using the bisection method
+            assert smearing_value is not None
+            assert smearing_value > 0
+            band_energies = np.array(band_energies)
+            try:
+                computed_fermi = sp.optimize.bisect(estimate_delta_num_electrons, band_energies.min(), band_energies.max(), args=(band_energies, smearing_value, grid_shape, num_elec_local, smearing_type))
+            except RuntimeError or ValueError:
+                raise FermiLevelEstimationFailed(f"Bisection method failed for {num_elec_local} electrons using {smearing_type} smearing with temperature {smearing_value}")
         else:
-            print("   Energy of the last occupied and first unoccupied points:")
-        print(band_energies[num_expected_occupied_points - 1])
-        print(band_energies[num_expected_occupied_points])
-        computed_fermi = (
-            band_energies[num_expected_occupied_points - 1]
-            + band_energies[num_expected_occupied_points]
-        ) / 2.0
+            band_energies.sort()
+            num_expected_occupied_points = (
+                grid_shape[0] * grid_shape[1] * grid_shape[2] * num_elec_local / spin_deg
+            )
+
+            # There is half occupation for even number of electrons and double spin degeneracy per band
+            half_occupation = spin_deg == 2 and num_elec_local % 2 == 1
+            num_expected_occupied_points = int(num_expected_occupied_points)
+
+            # print("Closest index to Fermi energy position:", num_expected_occupied_points)
+            print(f"### Considering {num_elec_local} electrons:")
+            if half_occupation:
+                print("   Energy of the two half-occupied points:")
+            else:
+                print("   Energy of the last occupied and first unoccupied points:")
+            print(band_energies[num_expected_occupied_points - 1])
+            print(band_energies[num_expected_occupied_points])
+            computed_fermi = (
+                band_energies[num_expected_occupied_points - 1]
+                + band_energies[num_expected_occupied_points]
+            ) / 2.0
         print(f"Computed Fermi energy: {computed_fermi}")
         print("-" * 72)
 
@@ -383,6 +437,29 @@ def parse_args(args=None):
         ),
     )
     parser.add_argument(
+        "-sm_type",
+        "--smearing_type",
+        type=str,
+        default=None,
+        help=(
+            "Type of smearing to be used in the Fermi energy calculation. "
+            "Currently only `cold` is implemented."
+            "By default no smearing is used."
+        ),
+    )
+    parser.add_argument(
+        "-sm_val",
+        "--smearing_value",
+        type=float,
+        default=None,
+        help=(
+            "Value of the smearing to be used in the Fermi energy calculation. "
+            "Must be a positive float."
+            "Must be specified if `smearing_type` is specified."
+            "By default no smearing is used."
+        ),
+    )
+    parser.add_argument(
         "-o",
         "--out_filename",
         type=str,
@@ -419,6 +496,8 @@ if __name__ == "__main__":
     num_electrons = args.num_electrons
     num_spin = args.num_spin
     band_index = args.band_index
+    smearing_type = args.smearing_type
+    smearing_value = args.smearing_value
     out_fname = args.out_filename
 
     print("cmdline args:")
@@ -426,6 +505,8 @@ if __name__ == "__main__":
     print(f"  {num_electrons = }")
     print(f"  {num_spin = }")
     print(f"  {band_index = }")
+    print(f"  {smearing_type = }")
+    print(f"  {smearing_value = }")
     print(f"  {out_fname = }")
     print()
 
@@ -495,6 +576,8 @@ if __name__ == "__main__":
                     num_electrons,
                     num_spin,
                     verbose=True,
+                    smearing_type=smearing_type,
+                    smearing_value=smearing_value,
                 )
         except Exception as exc:
             print("*" * 72)
