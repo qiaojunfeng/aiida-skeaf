@@ -1,5 +1,5 @@
 #!/usr/bin/env runaiida
-"""Examplary script to submit a SkeafCalculation."""
+"""Examplary script to submit a Wan2skeafCalculation."""
 # pylint: disable=unused-import
 from aiida import engine, orm
 
