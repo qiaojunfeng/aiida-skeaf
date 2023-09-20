@@ -66,10 +66,10 @@ class Wan2skeafParser(Parser):
         with self.retrieved.open(output_filename, "r") as handle:
             try:
                 output_node = parse_wan2skeaf_out(handle.readlines())
-            except FileNotFoundError as exc:
+            except BXSFFileNotFoundError as exc:
                 self.logger.error(f"File not found: {exc}")
                 return self.exit_codes.ERROR_MISSING_INPUT_FILE
-            except ValueError as exc:
+            except JobNotFinishedError as exc:
                 self.logger.error(f"Calculation not finished: {exc}")
                 return self.exit_codes.ERROR_JOB_NOT_FINISHED
             except KeyError as exc:

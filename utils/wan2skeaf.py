@@ -206,7 +206,7 @@ def prepare_bxsf_for_skeaf(
 # when using make sure that spin degeneracy is set to 2.
 # what about precision, is float enough?
 def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, temperature: float, k_point_grid, num_electrons: int, smearing = "cold") -> float:
-    """Find the occupation number of a given band at a given temperature.
+    """Find the difference between the sum of occupation numbers for a given Fermi level and the expected number of electrons.
     param fermi_energy: current estimation of the Fermi energy
     type fermi_energy: float
     param band_energies: array of energies of the band
@@ -217,7 +217,7 @@ def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, t
     type k_point_grid: array of ints of length 3
     param num_electrons: number of electrons
     type num_electrons: int
-    param smearing: type of smearing, for now only "cold" is implemented
+    param smearing: type of smearing, only "cold" is implemented
     type smearing: str
     return: computed number of electrons for current Fermi energy - number of electrons
     rtype: float
@@ -234,7 +234,7 @@ def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, t
             occupation_numbers[i] = np.average(sp.special.erfc(1/np.sqrt(2) - x_is) + np.sqrt(2/math.pi) * np.exp((np.sqrt(2) - x_is)*x_is - 1/2))
     else:
         raise InvalidSmearingType("Only cold smearing is implemented")
-    return np.sum(occupation_numbers) - num_electrons
+    return np.sum(occupation_numbers) - float(num_electrons)
 
 def estimate_fermi(
     in_fhandle,
@@ -341,6 +341,8 @@ def estimate_fermi(
             # find the Fermi energy using the bisection method
             assert smearing_value is not None
             assert smearing_value > 0
+
+            import numpy as np # Why do I have to import it here again? Otherwise UnboundLocalError: local variable 'np' referenced before assignment
             band_energies = np.array(band_energies)
             try:
                 computed_fermi = sp.optimize.bisect(estimate_delta_num_electrons, band_energies.min(), band_energies.max(), args=(band_energies, smearing_value, grid_shape, num_elec_local, smearing_type))
@@ -547,7 +549,7 @@ if __name__ == "__main__":
         except ImportError:
             print("INFO: Decompressing input 7z file.")
             ret_code = subprocess.run(['7z', 'x', in_fname]) # if in_fname has strange characters, this will fail. TODO: implement a function to convert to a safe filename
-            if ret_code != 0:
+            if ret_code.returncode != 0:
                 print(f"ERROR: file not found {in_fname}")
                 sys.exit(ret_code)
             bxsf_files = [f for f in os.listdir() if f.endswith(".bxsf")]
