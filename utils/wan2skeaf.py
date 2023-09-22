@@ -222,7 +222,7 @@ def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, t
     return: computed number of electrons for current Fermi energy - number of electrons
     rtype: float
     """
-    num_bands = int(len(band_energies)/k_point_grid[0]/k_point_grid[1]/k_point_grid[2])
+    num_bands = len(band_energies) // k_point_grid[0] // k_point_grid[1] // k_point_grid[2]
     occupation_numbers = np.zeros(num_bands)
     if smearing == "cold":
         # cold smearing
@@ -543,9 +543,8 @@ if __name__ == "__main__":
                 zip.extract(targets=targets)
                 bxsf_filename = targets[0]
                 dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
-
                 os.rename(bxsf_filename, dst_filename)
-                in_fname = dst_filename        
+                in_fname = dst_filename
         except ImportError:
             print("INFO: Decompressing input 7z file.")
             ret_code = subprocess.run(['7z', 'x', in_fname]) # if in_fname has strange characters, this will fail. TODO: implement a function to convert to a safe filename
