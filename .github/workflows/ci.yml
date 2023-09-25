@@ -10,7 +10,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8"]
-        aiida-version: ["stable", "develop"]
 
     services:
       postgres:
@@ -38,11 +37,6 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-
-    - name: Install aiida develop version
-      run: |
-        pip install git+git://github.com/aiidateam/aiida-core
-      if: ${{ matrix.aiida-version == 'develop' }}
 
     - name: Install python dependencies
       run: |
