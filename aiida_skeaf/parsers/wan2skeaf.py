@@ -15,13 +15,17 @@ from aiida.parsers.parser import Parser
 from aiida_skeaf.calculations.wan2skeaf import Wan2skeafCalculation
 
 
-class BXSFFileNotFoundError(Exception): # Should be inherited from aiida.common.exceptions.NotExistent?
+class BXSFFileNotFoundError(
+    Exception
+):  # Should be inherited from aiida.common.exceptions.NotExistent?
     """Raised when BXSF file is not found."""
-    pass
 
-class JobNotFinishedError(Exception): # Should be inherited from aiida.common.exceptions?  
+
+class JobNotFinishedError(
+    Exception
+):  # Should be inherited from aiida.common.exceptions?
     """Raised when wan2skeaf job is not finished and end timestamp is not in the output."""
-    pass
+
 
 class Wan2skeafParser(Parser):
     """
@@ -143,7 +147,7 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         "num_bands": re.compile(r"Number of bands:\s*([0-9]+)"),
         "kpoint_mesh": re.compile(r"Grid shape:\s*(.+)"),
         "band_indexes_in_bxsf": re.compile(r"Bands in bxsf:\s*(.+)"),
-        "timestamp_end": re.compile(r"Job done at\s*(.+)")
+        "timestamp_end": re.compile(r"Job done at\s*(.+)"),
     }
     re_band_minmax = re.compile(
         r"Min and max of band\s*([0-9]*)\s*:\s*([+-]?(?:[0-9]*[.])?[0-9]+)\s+([+-]?(?:[0-9]*[.])?[0-9]+)"
@@ -165,11 +169,14 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
             band_max = float(match.group(3))
             band_minmax[band] = (band_min, band_max)
 
-    if 'input_file_not_found' in parameters:
+    if "input_file_not_found" in parameters:
         import errno
         import os
-        raise BXSFFileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), parameters['input_file_not_found'])
-    if 'timestamp_end' not in parameters:
+
+        raise BXSFFileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), parameters["input_file_not_found"]
+        )
+    if "timestamp_end" not in parameters:
         raise JobNotFinishedError("Job not finished!")
 
     parameters["kpoint_mesh"] = [int(_) for _ in parameters["kpoint_mesh"].split("x")]

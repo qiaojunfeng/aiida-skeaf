@@ -131,7 +131,6 @@ class Wan2skeafCalculation(CalcJob):
             cmdline_params += ["--smearing_type", parameters["smearing_type"]]
             cmdline_params += ["--smearing_value", parameters["smearing_value"]]
 
-
         cmdline_params.append(self.inputs.bxsf_filename.value)
         #
         codeinfo.cmdline_params = cmdline_params
@@ -204,7 +203,7 @@ class InputParameters:  # pylint: disable=too-many-ancestors
         """
         self.dict = self.validate(dict)
 
-    def validate(self, parameters_dict):  # pylint: disable=no-self-use
+    def validate(self, parameters_dict):
         """Validate command line options.
 
         Uses the voluptuous package for validation. Find out about allowed keys using::

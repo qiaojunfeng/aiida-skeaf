@@ -36,6 +36,7 @@ def submit():
         num_electrons=num_electrons,
         protocol="precise",
     )
+    # pylint: disable=no-member
     # SOC
     params = builder.wan2skeaf.parameters.get_dict()
     params["num_spin"] = 1

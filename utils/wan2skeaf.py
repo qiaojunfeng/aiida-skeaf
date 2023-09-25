@@ -4,13 +4,13 @@ import argparse
 import bz2
 import datetime
 import functools
+import math
 import os
-import traceback
 import subprocess
+import traceback
 
 import numpy as np
 import scipy as sp
-import math
 
 # pylint: skip-file
 
@@ -33,14 +33,18 @@ def removesuffix(text: str, suffix: str) -> str:
     """
     return text[: -len(suffix)] if text.endswith(suffix) and len(suffix) != 0 else text
 
+
 class InvalidBXSF(Exception):
     """Invalid bxsf file."""
+
 
 class InvalidSmearingType(Exception):
     """Invalid smearing type to be used in wan2skeaf Fermi energy calculation."""
 
+
 class FermiLevelEstimationFailed(Exception):
     """Invalid smearing type to be used in wan2skeaf Fermi energy calculation."""
+
 
 def prepare_bxsf_for_skeaf(
     in_fhandle,
@@ -203,9 +207,17 @@ def prepare_bxsf_for_skeaf(
             "A file was written, but you passed some non-existing band to keep, so that the file is probably empty!"
         )
 
+
 # when using make sure that spin degeneracy is set to 2.
 # what about precision, is float enough?
-def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, temperature: float, k_point_grid, num_electrons: int, smearing = "cold") -> float:
+def estimate_delta_num_electrons(
+    fermi_energy: float,
+    band_energies: np.array,
+    temperature: float,
+    k_point_grid,
+    num_electrons: int,
+    smearing="cold",
+) -> float:
     """Find the difference between the sum of occupation numbers for a given Fermi level and the expected number of electrons.
     param fermi_energy: current estimation of the Fermi energy
     type fermi_energy: float
@@ -222,19 +234,36 @@ def estimate_delta_num_electrons(fermi_energy: float, band_energies: np.array, t
     return: computed number of electrons for current Fermi energy - number of electrons
     rtype: float
     """
-    num_bands = len(band_energies) // k_point_grid[0] // k_point_grid[1] // k_point_grid[2]
+    num_bands = (
+        len(band_energies) // k_point_grid[0] // k_point_grid[1] // k_point_grid[2]
+    )
     occupation_numbers = np.zeros(num_bands)
     if smearing == "cold":
         # cold smearing
         for i in range(num_bands):
             # compute x_i for the energies of a band
-            x_is = (fermi_energy - band_energies[i*k_point_grid[0]*k_point_grid[1]*k_point_grid[2]:(i+1)*k_point_grid[0]*k_point_grid[1]*k_point_grid[2]])/temperature
+            x_is = (
+                fermi_energy
+                - band_energies[
+                    i
+                    * k_point_grid[0]
+                    * k_point_grid[1]
+                    * k_point_grid[2] : (i + 1)
+                    * k_point_grid[0]
+                    * k_point_grid[1]
+                    * k_point_grid[2]
+                ]
+            ) / temperature
 
             # compute the occupation number by averaging over the k-points
-            occupation_numbers[i] = np.average(sp.special.erfc(1/np.sqrt(2) - x_is) + np.sqrt(2/math.pi) * np.exp((np.sqrt(2) - x_is)*x_is - 1/2))
+            occupation_numbers[i] = np.average(
+                sp.special.erfc(1 / np.sqrt(2) - x_is)
+                + np.sqrt(2 / math.pi) * np.exp((np.sqrt(2) - x_is) * x_is - 1 / 2)
+            )
     else:
         raise InvalidSmearingType("Only cold smearing is implemented")
     return np.sum(occupation_numbers) - float(num_electrons)
+
 
 def estimate_fermi(
     in_fhandle,
@@ -337,21 +366,41 @@ def estimate_fermi(
     print("-" * 72)
 
     for num_elec_local in num_electrons_list:
-        if smearing_type is not None and spin_deg == 2: # only inplemented for spin degeneracy 2
+        if (
+            smearing_type is not None and spin_deg == 2
+        ):  # only inplemented for spin degeneracy 2
             # find the Fermi energy using the bisection method
             assert smearing_value is not None
             assert smearing_value > 0
 
-            import numpy as np # Why do I have to import it here again? Otherwise UnboundLocalError: local variable 'np' referenced before assignment
+            import numpy as np  # Why do I have to import it here again? Otherwise UnboundLocalError: local variable 'np' referenced before assignment
+
             band_energies = np.array(band_energies)
             try:
-                computed_fermi = sp.optimize.bisect(estimate_delta_num_electrons, band_energies.min(), band_energies.max(), args=(band_energies, smearing_value, grid_shape, num_elec_local, smearing_type))
+                computed_fermi = sp.optimize.bisect(
+                    estimate_delta_num_electrons,
+                    band_energies.min(),
+                    band_energies.max(),
+                    args=(
+                        band_energies,
+                        smearing_value,
+                        grid_shape,
+                        num_elec_local,
+                        smearing_type,
+                    ),
+                )
             except RuntimeError or ValueError:
-                raise FermiLevelEstimationFailed(f"Bisection method failed for {num_elec_local} electrons using {smearing_type} smearing with temperature {smearing_value}")
+                raise FermiLevelEstimationFailed(
+                    f"Bisection method failed for {num_elec_local} electrons using {smearing_type} smearing with temperature {smearing_value}"
+                )
         else:
             band_energies.sort()
             num_expected_occupied_points = (
-                grid_shape[0] * grid_shape[1] * grid_shape[2] * num_elec_local / spin_deg
+                grid_shape[0]
+                * grid_shape[1]
+                * grid_shape[2]
+                * num_elec_local
+                / spin_deg
             )
 
             # There is half occupation for even number of electrons and double spin degeneracy per band
@@ -514,6 +563,7 @@ if __name__ == "__main__":
 
     if not os.path.isfile(in_fname):
         import sys
+
         print(f"ERROR: Input file {in_fname} does not exist.")
         sys.exit(2)
 
@@ -525,12 +575,15 @@ if __name__ == "__main__":
         )
         print("INFO: Auto-decompressing input bz2 file.")
     elif in_fname.endswith(".7z"):
-        import sys, re
+        import re
+        import sys
+
         try:
             import py7zr
+
             print("INFO: Decompressing input 7z file using py7zr.")
-            filter_pattern = re.compile(r'.*\.bxsf')
-            with py7zr.SevenZipFile(in_fname, 'r') as zip:
+            filter_pattern = re.compile(r".*\.bxsf")
+            with py7zr.SevenZipFile(in_fname, "r") as zip:
                 allfiles = zip.getnames()
                 targets = [f for f in allfiles if filter_pattern.match(f)]
                 if len(targets) > 1:
@@ -539,15 +592,17 @@ if __name__ == "__main__":
                 elif len(targets) == 0:
                     print("No bxsf file in archive")
                     sys.exit(2)
-            with py7zr.SevenZipFile(in_fname, 'r') as zip:
+            with py7zr.SevenZipFile(in_fname, "r") as zip:
                 zip.extract(targets=targets)
                 bxsf_filename = targets[0]
-                dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
+                dst_filename = "input.bxsf"  # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
                 os.rename(bxsf_filename, dst_filename)
                 in_fname = dst_filename
         except ImportError:
             print("INFO: Decompressing input 7z file.")
-            ret_code = subprocess.run(['7z', 'x', in_fname]) # if in_fname has strange characters, this will fail. TODO: implement a function to convert to a safe filename
+            ret_code = subprocess.run(
+                ["7z", "x", in_fname]
+            )  # if in_fname has strange characters, this will fail. TODO: implement a function to convert to a safe filename
             if ret_code.returncode != 0:
                 print(f"ERROR: file not found {in_fname}")
                 sys.exit(ret_code)
@@ -559,7 +614,7 @@ if __name__ == "__main__":
                 print("No bxsf file in the working directory")
                 sys.exit(2)
             bxsf_filename = bxsf_files[0]
-            dst_filename = "input.bxsf" # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
+            dst_filename = "input.bxsf"  # default name accepted by SKEAF, the bxsf file in the archive will be renamed to this
             os.rename(bxsf_filename, dst_filename)
             in_fname = dst_filename
         open_function = open

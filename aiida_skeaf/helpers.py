@@ -80,9 +80,7 @@ def get_code(entry_point, computer):
         executable = executables[entry_point]
     except KeyError as exc:
         raise KeyError(
-            "Entry point '{}' not recognized. Allowed values: {}".format(
-                entry_point, list(executables.keys())
-            )
+            f"Entry point '{entry_point}' not recognized. Allowed values: {list(executables.keys())}"
         ) from exc
 
     codes = Code.objects.find(  # pylint: disable=no-member

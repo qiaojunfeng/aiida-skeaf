@@ -75,7 +75,7 @@ class InputParameters:  # pylint: disable=too-many-ancestors
         """
         self.dict = self.validate(dict)
 
-    def validate(self, parameters_dict):  # pylint: disable=no-self-use
+    def validate(self, parameters_dict):
         """Validate command line options.
 
         Uses the voluptuous package for validation. Find out about allowed keys using::
@@ -93,7 +93,7 @@ class InputParameters:  # pylint: disable=too-many-ancestors
         return self.dict
 
     def __str__(self):
-        print(self.dict)
+        return str(self.dict)
 
 
 class SkeafParameters(InputParameters):  # pylint: disable=too-many-ancestors
