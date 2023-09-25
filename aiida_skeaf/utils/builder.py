@@ -7,8 +7,7 @@ from aiida_skeaf.calculations import Wan2skeafCalculation
 
 
 def create_wan2skeaf_builder(
-    params: ty.Union[dict, orm.Dict],
-    inputs: ty.Union[dict, orm.Dict]
+    params: ty.Union[dict, orm.Dict], inputs: ty.Union[dict, orm.Dict]
 ):  # replace inputs with bxsf, bxsf_filename etc
     """Create a builder for the Wan2SkeafCalculation.
     :param params: the parameters dictionary
