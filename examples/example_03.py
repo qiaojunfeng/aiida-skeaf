@@ -2,7 +2,7 @@
 """Examplary script to submit a SkeafWorkChain."""
 from aiida import engine, orm
 
-from aiida_wannier90_workflows.utils.workflows.builder import print_builder
+from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder
 
 from aiida_skeaf.utils.plot import plot_frequency_workchain
 from aiida_skeaf.workflows import SkeafWorkChain
