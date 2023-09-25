@@ -1,18 +1,20 @@
 """This module contains the builder functions for the calculations."""
-# import typing, union
+import typing as ty
+
+from aiida import orm
 
 from aiida_skeaf.calculations import Wan2skeafCalculation
 
 
 def create_wan2skeaf_builder(
-    params: dict,
-    inputs: dict,
+    params: ty.Union[dict, orm.Dict],
+    inputs: ty.Union[dict, orm.Dict]
 ):  # replace inputs with bxsf, bxsf_filename etc
     """Create a builder for the Wan2SkeafCalculation.
     :param params: the parameters dictionary
-    :type params: dict
+    :type params: dict, orm.Dict
     :param inputs: the inputs dictionary
-    :type inputs: dict
+    :type inputs: dict, orm.Dict
     :return: the builder
     :rtype:
     """
