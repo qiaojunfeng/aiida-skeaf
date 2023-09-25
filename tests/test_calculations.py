@@ -67,7 +67,10 @@ def test_skeaf(  # pylint: disable=too-many-arguments
         "parameters": parameters,
         "bxsf": bxsf,
         "metadata": {
-            "options": {"max_wallclock_seconds": 30},
+            "options": {
+                "max_wallclock_seconds": 30,
+                "withmpi": False,
+            },
         },
     }
 
