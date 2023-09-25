@@ -6,6 +6,7 @@ from aiida import engine, orm
 
 from aiida_skeaf.calculations.wan2skeaf import Wan2skeafCalculation
 
+
 def submit():
     """Submit a Wan2skeafCalculation."""
 
@@ -17,7 +18,7 @@ def submit():
         "num_electrons": 31,
         "band_index": "all",
         "smearing_type": "cold",
-        "smearing_value": 0.13605693122994
+        "smearing_value": 0.13605693122994,
     }
 
     inputs = {
@@ -29,7 +30,7 @@ def submit():
     }
 
     calc = engine.submit(Wan2skeafCalculation, **inputs)
-    
+
     print(f"Submitted {calc}")
 
     calc.base.extras.set("smearing_type", parameters["smearing_type"])

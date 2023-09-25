@@ -6,6 +6,7 @@ from aiida import engine, orm
 
 from aiida_skeaf.utils import create_wan2skeaf_builder
 
+
 def submit():
     """Submit a Wan2skeafCalculation."""
 
@@ -25,10 +26,10 @@ def submit():
         "bxsf_filename": "nscf.bxsf",
         "settings": dict({"autolink_bxsf_filename": "nscf.bxsf"}),
     }
-    
+
     builder = create_wan2skeaf_builder(parameters, inputs)
     calc = engine.submit(builder)
-    
+
     print(f"Submitted {calc}")
 
 
