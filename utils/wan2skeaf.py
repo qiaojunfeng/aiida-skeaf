@@ -11,6 +11,7 @@ import traceback
 
 import numpy as np
 import scipy as sp
+from scipy.optimize import bisect
 
 # pylint: skip-file
 
@@ -62,6 +63,7 @@ def prepare_bxsf_for_skeaf(
       We are NOT changing these in this function. [might be important for DOS]
       - It expects units of 2pi/bohr rather than 1/ang for the reciprocal
       lattice vectors! We are adapting those here.
+      # TODO: check!! it seems that skeaf expects lattice vectors in 1/Bohr instead!
     """
     # Will be used to know if we are printing the reciprocal vector
     in_recvec_section = False
@@ -377,7 +379,7 @@ def estimate_fermi(
 
             band_energies = np.array(band_energies)
             try:
-                computed_fermi = sp.optimize.bisect(
+                computed_fermi = bisect(
                     estimate_delta_num_electrons,
                     band_energies.min(),
                     band_energies.max(),
@@ -648,6 +650,7 @@ if __name__ == "__main__":
             print(f'Bands in bxsf: {" ".join([str(_) for _ in indexes])}')
         else:
             indexes = [band_index]
+            print(f'Bands in bxsf: {" ".join([str(_) for _ in indexes])}')
 
         try:
             for idx in indexes:
