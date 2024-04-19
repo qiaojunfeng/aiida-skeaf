@@ -130,6 +130,8 @@ class Wan2skeafCalculation(CalcJob):
         if "smearing_type" in parameters and "smearing_value" in parameters:
             cmdline_params += ["-s", parameters["smearing_type"]]
             cmdline_params += ["-w", parameters["smearing_value"]]
+        if "occupation_prefactor" in parameters:
+            cmdline_params += ["-p", parameters["occupation_prefactor"]]
 
         cmdline_params.append(self.inputs.bxsf_filename.value)
         #
@@ -176,6 +178,7 @@ input_parameters = {
     Optional("band_index", default=-1): int,
     Optional("smearing_type"): str,
     Optional("smearing_value"): float,
+    Optional("occupation_prefactor"): int,
 }
 
 

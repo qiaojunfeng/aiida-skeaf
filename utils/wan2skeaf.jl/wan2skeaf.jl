@@ -9,6 +9,9 @@
 # where you put this script.
 #
 # Example usage: ./wan2skeaf.jl wjl.bxsf -n 17
+using Pkg
+Pkg.instantiate()
+
 using Printf
 using Dates
 using WannierIO
@@ -34,9 +37,10 @@ The script
 - `-o, --out_filename`: output filename prefix
 - `-s, --smearing_type`: smearing type, default is `NoneSmearing()` (no smearing)
 - `-w, --width_smearing`: smearing width, default is 0.0
+- `-p, --prefactor`: occupation prefactor, 2 for non SOC, 1 for SOC, default is 2
 
 """
-@main function main(bxsf::String; num_electrons::Int, band_index::Int=-1, out_filename::String="skeaf", smearing_type::String="none", width_smearing::Float64=0.0)
+@main function main(bxsf::String; num_electrons::Int, band_index::Int=-1, out_filename::String="skeaf", smearing_type::String="none", width_smearing::Float64=0.0, prefactor::Int=2)
     println("Started on ", Dates.now())
     if !isfile(bxsf)
         println("ERROR: Input file $bxsf does not exist.")
@@ -95,7 +99,7 @@ The script
     RYDBERG_SI       = HARTREE_SI/2.0
     BOHR_TO_ANG   = 0.529177210903
 
-    εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons)
+    εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons, prefactor=prefactor)
     @printf("Computed Fermi energy: %.8f\n", εF_bxsf*(ELECTRONVOLT_SI/RYDBERG_SI))
     @printf("Computed Fermi energy in eV: %.8f\n", εF_bxsf)
     @printf("Fermi energy unit: Ry\n")
