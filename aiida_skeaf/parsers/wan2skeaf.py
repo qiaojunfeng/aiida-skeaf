@@ -148,8 +148,8 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         "fermi_energy_computed": re.compile(
             r"Computed Fermi energy:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
         ),
-        "fermi_energy_computed_eV": re.compile(
-            r"Computed Fermi energy in eV:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
+        "fermi_energy_computed_Ry": re.compile(
+            r"Computed Fermi energy in Ry:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
         ),
         "fermi_energy_unit": re.compile(r"Fermi energy unit:\s*(.+)"),
         "closest_eigenvalue_below_fermi": re.compile(
@@ -199,8 +199,8 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     ]
     parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
     parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
-    parameters["fermi_energy_computed_eV"] = float(
-        parameters["fermi_energy_computed_eV"]
+    parameters["fermi_energy_computed_Ry"] = float(
+        parameters["fermi_energy_computed_Ry"]
     )
     parameters["fermi_energy_unit"] = parameters["fermi_energy_unit"]
     parameters["closest_eigenvalue_below_fermi"] = float(
