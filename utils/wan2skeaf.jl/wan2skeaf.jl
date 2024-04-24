@@ -100,14 +100,14 @@ The script
     BOHR_TO_ANG   = 0.529177210903
 
     εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons, prefactor=prefactor)
-    @printf("Computed Fermi energy: %.8f\n", εF_bxsf*(ELECTRONVOLT_SI/RYDBERG_SI))
-    @printf("Computed Fermi energy in eV: %.8f\n", εF_bxsf)
-    @printf("Fermi energy unit: Ry\n")
+    @printf("Computed Fermi energy: %.8f\n", εF_bxsf)
+    @printf("Computed Fermi energy in Ry: %.8f\n", εF_bxsf*(ELECTRONVOLT_SI/RYDBERG_SI))
+    @printf("Fermi energy unit: eV\n")
     E_bxsf = reduce(vcat, eigenvalues)
     ε_bxsf_below = maximum(E_bxsf[E_bxsf .< εF_bxsf])
     ε_bxsf_above = minimum(E_bxsf[E_bxsf .> εF_bxsf])
-    @printf("Closest eigenvalue below Fermi energy: %.8f\n", ε_bxsf_below *(ELECTRONVOLT_SI/RYDBERG_SI))
-    @printf("Closest eigenvalue above Fermi energy: %.8f\n", ε_bxsf_above *(ELECTRONVOLT_SI/RYDBERG_SI))
+    @printf("Closest eigenvalue below Fermi energy: %.8f\n", ε_bxsf_below)
+    @printf("Closest eigenvalue above Fermi energy: %.8f\n", ε_bxsf_above)
 
     # write each band into one bxsf file
     if band_index < 0
@@ -121,8 +121,8 @@ The script
         outfile = out_filename * "_band_$(ib).bxsf"
 
 
-        band_min = minimum(bxsf.E[ib:ib, :, :, :])*(ELECTRONVOLT_SI/RYDBERG_SI)
-        band_max = maximum(bxsf.E[ib:ib, :, :, :])*(ELECTRONVOLT_SI/RYDBERG_SI)
+        band_min = minimum(bxsf.E[ib:ib, :, :, :])
+        band_max = maximum(bxsf.E[ib:ib, :, :, :])
 	    println("Min and max of band $ib : $band_min $band_max")
 
 	    #if (bxsf.fermi_energy >= band_min && bxsf.fermi_energy <= band_max)

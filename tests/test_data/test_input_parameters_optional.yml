@@ -1,3 +1,4 @@
+convert_fermi_energy_eV_to_Ry: false
 angle_iso_convention: false
 ending_phi: 90.0
 ending_theta: 90.0

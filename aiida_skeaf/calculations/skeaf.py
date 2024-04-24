@@ -145,6 +145,17 @@ class SkeafCalculation(CalcJob):
             params["ending_theta"] = phi
             params["ending_phi"] = theta
 
+        # unit conversion, constants from QE/Modules/Constants.f90
+        ELECTRONVOLT_SI = 1.602176634e-19
+        HARTREE_SI = 4.3597447222071e-18
+        RYDBERG_SI = HARTREE_SI / 2.0
+
+        convert_fermi_energy = params.pop("convert_fermi_energy_eV_to_Ry")
+        if convert_fermi_energy:
+            params["fermi_energy"] = params["fermi_energy"] * (
+                ELECTRONVOLT_SI / RYDBERG_SI
+            )
+
         # generate the raw input for skeaf
         params = SkeafParameters(params).generate()
 

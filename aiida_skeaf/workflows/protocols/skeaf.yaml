@@ -35,6 +35,7 @@ default_inputs:
             ending_phi: 0.000000
             num_rotation: 45
             angle_iso_convention: True
+            convert_fermi_energy_eV_to_Ry: True
 default_protocol: moderate
 protocols:
     moderate:

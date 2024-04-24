@@ -29,6 +29,7 @@ input_parameters = {
     # if set as True, I will exchange theta and phi when writting the raw input file
     # for skeaf.
     Optional("angle_iso_convention", default=False): bool,
+    Optional("convert_fermi_energy_eV_to_Ry", default=False): bool,
 }
 
 # Allowed input paramters of skeaf config.in
