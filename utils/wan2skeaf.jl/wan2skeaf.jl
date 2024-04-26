@@ -38,29 +38,34 @@ The script
 - `-s, --smearing_type`: smearing type, default is `NoneSmearing()` (no smearing)
 - `-w, --width_smearing`: smearing width, default is 0.0
 - `-p, --prefactor`: occupation prefactor, 2 for non SOC, 1 for SOC, default is 2
-
+- `-t, --tol_n_electrons`: tolerance for number of electrons, default is 1e-6
 """
-@main function main(bxsf::String; num_electrons::Int, band_index::Int=-1, out_filename::String="skeaf", smearing_type::String="none", width_smearing::Float64=0.0, prefactor::Int=2)
+@main function main(bxsf::String; num_electrons::Int, band_index::Int=-1, out_filename::String="skeaf", smearing_type::String="none", width_smearing::Float64=0.0, prefactor::Int=2, tol_n_electrons::Float64=1e-6)
     println("Started on ", Dates.now())
     if !isfile(bxsf)
-        println("ERROR: Input file $bxsf does not exist.")
+        println("ERROR: input file $bxsf does not exist.")
         exit(2)
     end
     if endswith(bxsf, ".7z")
         # -y: assume yes, will overwrite existing unzipped files
         ret = run(`$(p7zip()) x -y $bxsf`)
-        success(ret) || error("Error while unzipping file: $bxsf")
+        success(ret) || error("error while unzipping file: $bxsf")
         bxsf_files = filter(x -> endswith(x, ".bxsf"), readdir("."))
         if length(bxsf_files) != 1
-            error("Expecting only one .bxsf file in the 7z file, but got $(length(bxsf_files))")
+            error("expecting only one .bxsf file in the 7z file, but got $(length(bxsf_files))")
         end
         bxsf_filename = bxsf_files[1]
         dst_filename = "input.bxsf"
         mv(bxsf_filename, dst_filename) # not sure this is needed! skeaf reads the output file?
         bxsf = dst_filename
     end
+    println("Number of electrons: ", num_electrons)
     bxsf = WannierIO.read_bxsf(bxsf)
     @printf("Fermi Energy from file: %.8f\n", bxsf.fermi_energy)
+
+    nbands, nkx, nky, nkz = size(bxsf.E)
+    println("Number of bands: ", nbands)
+    println("Grid shape: $nkx x $nky x $nkz")
 
     kBT = width_smearing
     if smearing_type == "none"
@@ -70,12 +75,13 @@ The script
     elseif smearing_type == "marzari-vanderbilt" || smearing_type == "cold"
         smearing = Wannier.ColdSmearing()
     else
-        error("Unknown smearing type: $smearing_type")
+        error("unknown smearing type: $smearing_type")
     end
 
-    nbands, nkx, nky, nkz = size(bxsf.E)
-    println("Number of bands: ", nbands)
-    println("Grid shape: $nkx x $nky x $nkz")
+    println("Smearing type: ", smearing_type)
+    println("Smearing width: ", width_smearing)
+    println("Occupation prefactor: ", prefactor)
+    println("Tolerance for number of electrons: ", tol_n_electrons)
 
     # some times, w/o smearing, the number of electrons cannot be integrated to
     # the exact number of electrons, since we only have discrete eigenvalues.
@@ -84,7 +90,7 @@ The script
     # always possible to integrate to the exact integer for number of electrons.
     # tol_n_electrons = 1e-3
     # this is the default
-    tol_n_electrons = 1e-6
+    # tol_n_electrons = 1e-6
 
     # note that according to bxsf specification, the eigenvalues are defined
     # on "general grid" instead of "periodic grid", i.e., the right BZ edges are
@@ -99,15 +105,26 @@ The script
     RYDBERG_SI       = HARTREE_SI/2.0
     BOHR_TO_ANG   = 0.529177210903
 
-    εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons, prefactor=prefactor)
+    εF_bxsf = 0.0
+    try
+        εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons, prefactor=prefactor)
+    catch e
+        println("Error: ", e.msg)
+        exit(3)
+    end
     @printf("Computed Fermi energy: %.8f\n", εF_bxsf)
-    @printf("Computed Fermi energy in Ry: %.8f\n", εF_bxsf*(ELECTRONVOLT_SI/RYDBERG_SI))
     @printf("Fermi energy unit: eV\n")
     E_bxsf = reduce(vcat, eigenvalues)
     ε_bxsf_below = maximum(E_bxsf[E_bxsf .< εF_bxsf])
     ε_bxsf_above = minimum(E_bxsf[E_bxsf .> εF_bxsf])
     @printf("Closest eigenvalue below Fermi energy: %.8f\n", ε_bxsf_below)
     @printf("Closest eigenvalue above Fermi energy: %.8f\n", ε_bxsf_above)
+
+    @printf("Computed Fermi energy in Ry: %.8f\n", εF_bxsf*(ELECTRONVOLT_SI/RYDBERG_SI))
+    println("Constants used for the conversion (from QE/Modules/Constants.f90): ")
+    println("  ELECTRONVOLT_SI: ", ELECTRONVOLT_SI)
+    println("  RYDBERG_SI: ", RYDBERG_SI)
+    println("  BOHR_TO_ANG: ", BOHR_TO_ANG)
 
     # write each band into one bxsf file
     if band_index < 0
