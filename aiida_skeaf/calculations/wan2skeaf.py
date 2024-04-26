@@ -105,6 +105,14 @@ class Wan2skeafCalculation(CalcJob):
             message="Calculation did not finish correctly.",
         )
 
+        spec.exit_code(
+            304,
+            "ERROR_NUM_ELEC_NOT_CONVERGED",
+            message="The bisection algorithm to compute Fermi level "
+            + "could not converge within the tolerance in number of electrons.\n"
+            + "Try increasing the tolerance by setting `tol_n_electrons` in the input parameters.",
+        )
+
     def prepare_for_submission(self, folder):
         """
         Create input files.
@@ -132,6 +140,8 @@ class Wan2skeafCalculation(CalcJob):
             cmdline_params += ["-w", parameters["smearing_value"]]
         if "occupation_prefactor" in parameters:
             cmdline_params += ["-p", parameters["occupation_prefactor"]]
+        if "tol_n_electrons" in parameters:
+            cmdline_params += ["-t", parameters["tol_n_electrons"]]
 
         cmdline_params.append(self.inputs.bxsf_filename.value)
         #
@@ -179,6 +189,7 @@ input_parameters = {
     Optional("smearing_type"): str,
     Optional("smearing_value"): float,
     Optional("occupation_prefactor"): int,
+    Optional("tol_n_electrons"): float,
 }
 
 

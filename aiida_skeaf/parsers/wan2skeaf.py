@@ -27,6 +27,15 @@ class JobNotFinishedError(
     """Raised when wan2skeaf job is not finished and end timestamp is not in the output."""
 
 
+class NumElecNotWithinToleranceError(
+    Exception
+):  # Should be inherited from aiida.common.exceptions?
+    """
+    Raised when the bisection algorithm to compute Fermi level can't converge
+    within the tolerance in number of electrons.
+    """
+
+
 class Wan2skeafParser(Parser):
     """
     Parser class for parsing output of ``wan2skeaf.py``.
@@ -73,6 +82,9 @@ class Wan2skeafParser(Parser):
             except BXSFFileNotFoundError as exc:
                 self.logger.error(f"File not found: {exc}")
                 return self.exit_codes.ERROR_MISSING_INPUT_FILE
+            except NumElecNotWithinToleranceError as exc:
+                self.logger.error(f"Calculation failed: {exc}")
+                return self.exit_codes.ERROR_NUM_ELEC_NOT_CONVERGED
             except JobNotFinishedError as exc:
                 self.logger.error(f"Calculation not finished: {exc}")
                 return self.exit_codes.ERROR_JOB_NOT_FINISHED
@@ -140,8 +152,14 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     }
 
     regexs = {
-        "input_file_not_found": re.compile(r"ERROR: Input file\s*(.+) does not exist."),
+        "input_file_not_found": re.compile(r"ERROR: input file\s*(.+) does not exist."),
+        "failed_to_find_Fermi_energy_within_tolerance": re.compile(
+            r"Error: Failed to find Fermi energy within tolerance, Δn_elec = ([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
+        ),
         "timestamp_started": re.compile(r"Started on\s*(.+)"),
+        "num_electrons": re.compile(
+            r"Number of electrons:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
+        ),
         "fermi_energy_in_bxsf": re.compile(
             r"Fermi Energy from file:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
         ),
@@ -160,6 +178,16 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         ),
         "num_bands": re.compile(r"Number of bands:\s*([0-9]+)"),
         "kpoint_mesh": re.compile(r"Grid shape:\s*(.+)"),
+        "smearing_type": re.compile(r"Smearing type:\s*(.+)"),
+        "smearing_width": re.compile(
+            r"Smearing width:\s*([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
+        ),
+        "occupation_prefactor": re.compile(
+            r"Occupation prefactor:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
+        ),
+        "tol_n_electrons": re.compile(
+            r"Tolerance for number of electrons:\s*([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
+        ),
         "band_indexes_in_bxsf": re.compile(r"Bands in bxsf:\s*(.+)"),
         "timestamp_end": re.compile(r"Job done at\s*(.+)"),
     }
@@ -190,6 +218,11 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         raise BXSFFileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), parameters["input_file_not_found"]
         )
+    if "failed_to_find_Fermi_energy_within_tolerance" in parameters:
+        raise NumElecNotWithinToleranceError(
+            "Failed to find Fermi energy within tolerance, Δn_elec = "
+            + f"{parameters['failed_to_find_Fermi_energy_within_tolerance']}"
+        )
     if "timestamp_end" not in parameters:
         raise JobNotFinishedError("Job not finished!")
 
@@ -197,18 +230,23 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     parameters["band_indexes_in_bxsf"] = [
         int(_) for _ in parameters["band_indexes_in_bxsf"].split()
     ]
-    parameters["fermi_energy_in_bxsf"] = float(parameters["fermi_energy_in_bxsf"])
-    parameters["fermi_energy_computed"] = float(parameters["fermi_energy_computed"])
-    parameters["fermi_energy_computed_Ry"] = float(
-        parameters["fermi_energy_computed_Ry"]
-    )
+    float_keys = [
+        "smearing_width",
+        "tol_n_electrons",
+        "fermi_energy_in_bxsf",
+        "fermi_energy_computed",
+        "fermi_energy_computed_Ry",
+        "closest_eigenvalue_below_fermi",
+        "closest_eigenvalue_above_fermi",
+    ]
+    for key in float_keys:
+        parameters[key] = float(parameters[key])
     parameters["fermi_energy_unit"] = parameters["fermi_energy_unit"]
-    parameters["closest_eigenvalue_below_fermi"] = float(
-        parameters["closest_eigenvalue_below_fermi"]
-    )
-    parameters["closest_eigenvalue_above_fermi"] = float(
-        parameters["closest_eigenvalue_above_fermi"]
-    )
+    parameters["smearing_type"] = parameters["smearing_type"]
+    parameters["num_bands"] = int(parameters["num_bands"])
+    parameters["num_electrons"] = int(parameters["num_electrons"])
+    parameters["occupation_prefactor"] = int(parameters["occupation_prefactor"])
+
     # make sure the order is the same as parameters["band_indexes_in_bxsf"]
     parameters["band_min"] = [
         band_minmax[_][0] for _ in parameters["band_indexes_in_bxsf"]
