@@ -143,6 +143,12 @@ def parse_frequency(filecontent: ty.List[str]) -> orm.ArrayData:
         ndmin=1,  # at least 1 dim even if there's single freq in output
     )
 
+    # in the older numpy versions, e.g. 1.22.4, after reading empty file,
+    # freq.shape = (0,1), which causes an error when setting arrays, e.g. array.set_array("phi", freq[:, 1])
+    # to avoid dependency on numpy version, we check if freq is empty and reshape it to (0,6)
+    if len(freq) == 0 and freq.shape[1] != 6:
+        freq = freq.reshape(freq.shape[0], 6)
+
     array.set_array("theta", freq[:, 0])
     array.set_array("phi", freq[:, 1])
     array.set_array("freq", freq[:, 2])
