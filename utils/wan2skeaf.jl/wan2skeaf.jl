@@ -81,7 +81,7 @@ The script
     println("Smearing type: ", smearing_type)
     println("Smearing width: ", width_smearing)
     println("Occupation prefactor: ", prefactor)
-    println("Tolerance for number of electrons: ", tol_n_electrons)
+    println("Initial tolerance for number of electrons (default 1e-6): ", tol_n_electrons)
 
     # some times, w/o smearing, the number of electrons cannot be integrated to
     # the exact number of electrons, since we only have discrete eigenvalues.
@@ -106,14 +106,36 @@ The script
     BOHR_TO_ANG   = 0.529177210903
 
     εF_bxsf = 0.0
-    try
-        εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons, prefactor=prefactor)
-    catch e
-        println("Error: ", e.msg)
+    tol_n_electrons_upperbound = 1e-3
+    if tol_n_electrons > tol_n_electrons_upperbound
+        println("Warning: tolerance for number of electrons is large, > 1e-3, which may lead to inaccurate Fermi energy.")
+        tol_n_electrons_upperbound = tol_n_electrons
+    end
+    tol_n_e_curr = tol_n_electrons
+
+    # try to compute Fermi energy with increasing tolerance for number of electrons
+    while tol_n_e_curr <= tol_n_electrons_upperbound
+        println("Current tolerance for number of electrons: ", tol_n_e_curr)
+        try
+            εF_bxsf = Wannier.compute_fermi_energy(eigenvalues, num_electrons, kBT, smearing; tol_n_electrons=tol_n_e_curr, prefactor=prefactor)
+            break
+        catch e
+            println("Error: ", e.msg)
+            if startswith(e.msg, "Failed to find Fermi energy within tolerance")
+                println("   Increasing tolerance for number of electrons by a factor of 2...")
+                tol_n_e_curr = tol_n_e_curr*2
+                continue
+            end
+            exit(3)
+        end
+    end
+    if tol_n_e_curr > tol_n_electrons_upperbound
+        println("Error: tolerance for number of electrons exceeded the tol_n_electrons_upperbound. Exiting...")
         exit(3)
     end
     @printf("Computed Fermi energy: %.8f\n", εF_bxsf)
     @printf("Fermi energy unit: eV\n")
+    @printf("Final tolerance for number of electrons: %.8f\n", tol_n_e_curr)
     E_bxsf = reduce(vcat, eigenvalues)
     ε_bxsf_below = maximum(E_bxsf[E_bxsf .< εF_bxsf])
     ε_bxsf_above = minimum(E_bxsf[E_bxsf .> εF_bxsf])
@@ -136,14 +158,11 @@ The script
     for ib in band_range
         # here I am still using the Fermi energy from input bxsf, i.e., QE scf Fermi
         outfile = out_filename * "_band_$(ib).bxsf"
-
-
         band_min = minimum(bxsf.E[ib:ib, :, :, :])
         band_max = maximum(bxsf.E[ib:ib, :, :, :])
-	    println("Min and max of band $ib : $band_min $band_max")
-
-	    #if (bxsf.fermi_energy >= band_min && bxsf.fermi_energy <= band_max)
-	    E_band_Ry = bxsf.E[ib:ib, :, :, :].*(ELECTRONVOLT_SI/RYDBERG_SI)
+        println("Min and max of band $ib : $band_min $band_max")
+        #if (bxsf.fermi_energy >= band_min && bxsf.fermi_energy <= band_max)
+        E_band_Ry = bxsf.E[ib:ib, :, :, :].*(ELECTRONVOLT_SI/RYDBERG_SI)
         E_fermi_Ry = bxsf.fermi_energy*(ELECTRONVOLT_SI/RYDBERG_SI)
         span_vectors_bohr = bxsf.span_vectors.*BOHR_TO_ANG/2/pi
         # what about the origin? It has to be zero (Gamma point) for bxsf so I don't change it here
