@@ -154,11 +154,14 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     regexs = {
         "input_file_not_found": re.compile(r"ERROR: input file\s*(.+) does not exist."),
         "failed_to_find_Fermi_energy_within_tolerance": re.compile(
-            r"Error: Failed to find Fermi energy within tolerance, Δn_elec = ([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
+            r"Error: tolerance for number of electrons exceeded the tol_n_electrons_upperbound. Exiting..."
         ),
         "timestamp_started": re.compile(r"Started on\s*(.+)"),
         "num_electrons": re.compile(
             r"Number of electrons:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
+        ),
+        "tol_n_electrons_initial": re.compile(
+            r"Initial tolerance for number of electrons \(default 1e-6\):\s*([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
         ),
         "fermi_energy_in_bxsf": re.compile(
             r"Fermi Energy from file:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
@@ -185,8 +188,8 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
         "occupation_prefactor": re.compile(
             r"Occupation prefactor:\s*([+-]?(?:[0-9]*[.])?[0-9]+)"
         ),
-        "tol_n_electrons": re.compile(
-            r"Tolerance for number of electrons:\s*([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
+        "tol_n_electrons_final": re.compile(
+            r"Final tolerance for number of electrons:\s*([+-]?(?:[0-9]*[.])?[0-9]+e?[+-]?[0-9]*)"
         ),
         "band_indexes_in_bxsf": re.compile(r"Bands in bxsf:\s*(.+)"),
         "timestamp_end": re.compile(r"Job done at\s*(.+)"),
@@ -232,7 +235,8 @@ def parse_wan2skeaf_out(filecontent: ty.List[str]) -> orm.Dict:
     ]
     float_keys = [
         "smearing_width",
-        "tol_n_electrons",
+        "tol_n_electrons_initial",
+        "tol_n_electrons_final",
         "fermi_energy_in_bxsf",
         "fermi_energy_computed",
         "fermi_energy_computed_Ry",
