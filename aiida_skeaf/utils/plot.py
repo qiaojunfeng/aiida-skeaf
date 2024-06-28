@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Functions to plot output results."""
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -37,7 +36,7 @@ def complement_color(r, g, b):
     return tuple(k - u for u in (r, g, b))
 
 
-def plot_xy(
+def plot_xy(  # pylint: disable=too-many-arguments
     x: np.ndarray,
     y: np.ndarray,
     *,
@@ -45,6 +44,7 @@ def plot_xy(
     xlabel: str = None,
     ylabel: str = None,
     title: str = "Frequency vs angle",
+    invert_x: bool = False,
     ax: plt.Axes = None,
 ) -> None:
     """Plot raw data.
@@ -63,18 +63,12 @@ def plot_xy(
         _, ax = plt.subplots(1, 1)
         show_plot = True
 
-    line2D = ax.plot(x, y)
-    line_color = line2D[0].get_c()
-    line_color = mpl.colors.to_rgb(line_color)
-    # edge_color = "r"
-    edge_color = complement_color(*line_color)
-
+    if invert_x:
+        ax.xaxis.set_inverted(True)
     ax.scatter(
         x,
         y,
         marker="o",
-        facecolors="none",
-        edgecolors=edge_color,
         label=label,
     )
 
@@ -117,7 +111,7 @@ def plot_frequency(
     if multiply_cosine:
         y_array *= np.cos(x_array / 180 * np.pi)
 
-    header = frequency.attributes["header"].strip().split(",")
+    header = frequency.base.attributes.all["header"].strip().split(",")
 
     xlabel = [_ for _ in header if x in _.lower()][0]
     ylabel = [_ for _ in header if y in _.lower()][0]
